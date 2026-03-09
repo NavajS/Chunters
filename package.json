@@ -1,0 +1,44 @@
+{
+  "name": "chunters",
+  "version": "1.0.0",
+  "description": "Anonymous text based group therapy.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/src/index.js",
+    "server": "nodemon server/src/index.js",
+    "client": "cd client && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "db:init": "node server/src/config/initDb.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NavajS/Chunters.git"
+  },
+  "keywords": [],
+  "author": "Navaj, Max, Seamus, Tej",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/NavajS/Chunters/issues"
+  },
+  "homepage": "https://github.com/NavajS/Chunters#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.0",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.1",
+    "nodemailer": "^8.0.1",
+    "pg": "^8.20.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.14"
+  }
+}
