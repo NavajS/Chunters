@@ -1,5 +1,5 @@
 // DB connection
-const { Pool } = requires('pg');
+const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
@@ -19,4 +19,4 @@ pool.on('error', (err) => {
     process.exit(-1);
 });
 
-modules.exports = pool;
+module.exports = pool;
