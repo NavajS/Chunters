@@ -4,13 +4,13 @@
   "description": "Anonymous text based group therapy.",
   "main": "index.js",
   "scripts": {
-  "start": "node server/src/index.js",
-  "server": "nodemon server/src/index.js",
-  "client": "cd client && npm start",
-  "dev": "concurrently \"npm run server\" \"npm run client\"",
-  "db:init": "node server/src/config/initDb.js",
-  "server:test": "jest server/tests",
-  "client:test": "cd client && npm test"
+    "start": "node server/src/index.js",
+    "server": "nodemon server/src/index.js",
+    "client": "cd client && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "db:init": "node server/src/config/initDb.js",
+    "server:test": "jest server/tests",
+    "client:test": "cd client && npm test"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,6 @@
   },
   "homepage": "https://github.com/NavajS/Chunters#readme",
   "dependencies": {
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",

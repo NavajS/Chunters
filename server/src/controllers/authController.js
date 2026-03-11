@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const pool = require("../config/db");
 const { sendVerificationEmail } = require("../utils/mailer");
 
@@ -62,7 +62,7 @@ async function signup(req, res) {
 
 async function verifyEmail(req, res) {
   try {
-    const { token } = req.query;
+    const { token } = req.params;
 
     if (!token) {
       return res.status(400).send("Missing verification token.");
