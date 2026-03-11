@@ -1,4 +1,5 @@
 const express = require('express');
+const authRoutes = require("./routes/authRoutes");
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -21,7 +22,7 @@ app.use(morgan('dev'));
 
 app.use(express.json({limit: '10kb'}));
 // Include rest of routing logic
-
+app.use("/auth", authRoutes);
 
 // Checking endpoint
 app.get('/api/health', (req, res) => {
