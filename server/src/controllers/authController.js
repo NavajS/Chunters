@@ -3,9 +3,17 @@ const bcrypt = require("bcrypt");
 const pool = require("../config/db");
 const { sendVerificationEmail } = require("../utils/mailer");
 
-// checks that the email is actually a UF email
+// checks that the email domain is allowed based on environment configuration
 function isUFLEmail(email) {
-  return typeof email === "string" && email.toLowerCase().endsWith("@ufl.edu");
+  if (typeof email !== "string") return false;
+
+  const allowedDomains = (process.env.ALLOWED_EMAIL_DOMAINS || "")
+    .split(",")
+    .map(domain => domain.trim().toLowerCase());
+
+  const emailDomain = email.split("@")[1]?.toLowerCase();
+
+  return allowedDomains.includes(emailDomain);
 }
 
 async function signup(req, res) {
