@@ -42,11 +42,12 @@ async function signup(req, res) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await pool.query(
-      `INSERT INTO users (email, password_hash, is_verified, verification_token)
-       VALUES ($1, $2, $3, $4)`,
-      [normalizedEmail, passwordHash, false, verificationToken]
+      `INSERT INTO users (email, password_hash, is_verified, verification_token, verification_expires)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [normalizedEmail, passwordHash, false, verificationToken, verificationExpires]
     );
 
     await sendVerificationEmail(normalizedEmail, verificationToken);
@@ -69,7 +70,10 @@ async function verifyEmail(req, res) {
     }
 
     const result = await pool.query(
-      "SELECT id, is_verified FROM users WHERE verification_token = $1",
+      `SELECT id, is_verified
+       FROM users
+       WHERE verification_token = $1
+         AND verification_expires > NOW()`,
       [token]
     );
 
@@ -86,7 +90,8 @@ async function verifyEmail(req, res) {
     await pool.query(
       `UPDATE users
        SET is_verified = true,
-           verification_token = NULL
+           verification_token = NULL,
+           verification_expires = NULL
        WHERE id = $1`,
       [user.id]
     );

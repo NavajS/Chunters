@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendVerificationEmail(toEmail, token) {
-  const verificationLink = `${process.env.BACKEND_URL}/auth/verify-email/${token}`;
+  const verificationLink = `${process.env.BACKEND_URL}/api/auth/verify-email/${token}`;
 
   await transporter.sendMail({
     from: process.env.EMAIL_FROM,
