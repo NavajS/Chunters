@@ -83,6 +83,7 @@ async function verifyEmail(req, res) {
       [user.id]
     );
 
+    // replace "Email verified succesfully" with frontend port for full development
     return res.send("Email verified successfully.");
   } catch (error) {
     console.error("Verification error:", error);
