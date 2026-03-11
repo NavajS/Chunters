@@ -55,7 +55,7 @@ jest.mock("nodemailer", () => ({
      */
     test("POST /auth/signup should reject non-ufl emails", async () => {
       const res = await request(app)
-        .post("/auth/signup")
+        .post("/api/auth/signup")
         .send({
           email: "test@gmail.com",
           password: "TestPassword123!",
@@ -78,7 +78,7 @@ jest.mock("nodemailer", () => ({
      */
     test("POST /auth/signup should reject missing email or password", async () => {
       const res = await request(app)
-        .post("/auth/signup")
+        .post("/api/auth/signup")
         .send({
           email: "",
           password: "",
