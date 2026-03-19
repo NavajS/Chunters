@@ -1,0 +1,133 @@
+/* ─── Background Cards Container ─── */
+.bg-cards {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Individual Card ─── */
+.bg-card {
+  position: absolute;
+  border-radius: 16px;
+  padding: 16px 18px;
+  opacity: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.bg-card--from-left {
+  animation: slideFromLeft 0.8s ease-out forwards;
+}
+
+.bg-card--from-right {
+  animation: slideFromRight 0.8s ease-out forwards;
+}
+
+.bg-card--from-top {
+  animation: slideFromTop 0.8s ease-out forwards;
+}
+
+/*gentle float AFTER slide-in completes */
+.bg-card--from-left,
+.bg-card--from-right,
+.bg-card--from-top {
+  animation-fill-mode: forwards;
+}
+
+.bg-card:nth-child(odd) {
+  --float-animation: gentleFloat 6s ease-in-out infinite;
+}
+.bg-card:nth-child(even) {
+  --float-animation: gentleFloat 7s ease-in-out infinite;
+}
+
+/* ─── Card Content ─── */
+.bg-card-label {
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.bg-card-icon {
+  font-size: 32px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.bg-card-icon-only {
+  font-size: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.bg-card-chat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bg-card-chat span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ─── Lines ─── */
+.bg-card-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.bg-card-lines span {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+}
+.bg-card-lines span:first-child { width: 100%; }
+.bg-card-lines span:nth-child(2) { width: 70%; }
+
+/* ─── Animations ─── */
+@keyframes slideFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-60px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes slideFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(60px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes slideFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 500px) {
+  .bg-cards { display: none; }
+}
