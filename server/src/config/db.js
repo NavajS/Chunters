@@ -1,22 +1,17 @@
-// DB connection
 const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
 });
 
+// We only log the connection, we NEVER call process.exit here
 pool.on('connect', () => {
-    console.log('Connected to PostgreSQL database');
-});
-
-pool.on('error', (err) => {
-    console.error('Unexpected database error:', err);
-    process.exit(-1);
+  console.log('🐘 PostgreSQL connected successfully');
 });
 
 module.exports = pool;
