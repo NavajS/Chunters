@@ -1,6 +1,11 @@
 const express = require('express');
 const cors = require('cors');
+
 require('dotenv').config();
+if (!process.env.JWT_SECRET) {
+  console.error("FATAL ERROR: JWT_SECRET is not defined.");
+  process.exit(1);
+}
 
 // Import your routes
 const authRoutes = require('./routes/authRoutes');
@@ -28,7 +33,7 @@ app.get('/', (req, res) => {
 
 // 4. Start the Server
 // We are hardcoding 5050 here to avoid the macOS AirPlay conflict on 5000
-const PORT = 5050;
+const PORT = process.env.PORT || 5050;
 
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server is flying on http://localhost:${PORT}`);

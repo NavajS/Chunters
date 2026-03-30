@@ -92,7 +92,7 @@ async function verifyEmail(req, res) {
 
     const result = await pool.query(
       `SELECT id, is_verified FROM users 
-       WHERE verification_token = $1 AND (verification_expires > NOW() OR verification_expires IS NULL)`,
+       WHERE verification_token = $1 AND verification_expires > NOW()`,
       [token]
     );
 
@@ -128,7 +128,7 @@ async function login(req, res) {
 
     const result = await pool.query(
       "SELECT id, email, password_hash, is_verified FROM users WHERE email = $1",
-      [email.toLowerCase()]
+      [email.trim().toLowerCase()]
     );
 
     if (result.rows.length === 0) {
