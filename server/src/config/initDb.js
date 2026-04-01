@@ -2,8 +2,8 @@ const pool = require('./db');
 require('dotenv').config();
 
 const initSQL = `
+-- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 
 -- Users: The real life identity of a user will not be revealed to other users
 CREATE TABLE IF NOT EXISTS users (
@@ -110,8 +110,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
--- Indexes
+-- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_threads_created_at ON threads(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_threads_category ON threads(category);
 CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON posts(thread_id);
@@ -122,18 +121,18 @@ CREATE INDEX IF NOT EXISTS idx_appeals_status ON appeals(status);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 `;
 
-
-// Runs script to initialize the database
 async function initializeDatabase() {
     try {
-        console.log('Initializing the database.');
+        console.log('🚀 Initializing the database...');
+        // Execute the full SQL script
         await pool.query(initSQL);
-        console.log('Database has been initialized.');
+        console.log('✅ Database tables and extensions have been initialized.');
     }
     catch(error) {
-        console.log('Error with initalizing the database:', error.message);
+        console.error('❌ Error initializing the database:', error.message);
     }
     finally {
+        // We end the pool here because this script is run as a one-off command
         await pool.end();
     }
 }
