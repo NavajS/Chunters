@@ -41,6 +41,7 @@ function LoginPage() {
 
       localStorage.setItem('token', data.token);
       console.log('Login successful:', data);
+      navigate('/threads');
     } catch (err) {
       setError('Unable to connect to the server. Make sure the backend is running.');
     } finally {
