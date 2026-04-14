@@ -9,13 +9,16 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const navigate = useNavigate();
 
   const handleSignIn = async () => {
     setError('');
+    setMessage('');
 
-   if (!email.trim().toLowerCase().endsWith('@ufl.edu')) {
+    if (!email.trim().toLowerCase().endsWith('@ufl.edu')) {
       setError('Only @ufl.edu emails are accepted.');
       return;
     }
@@ -40,9 +43,46 @@ function LoginPage() {
       }
 
       localStorage.setItem('token', data.token);
-      console.log('Login successful:', data);
+      setToken(data.token);
+      setMessage('Sign in successful. You are now logged in.');
     } catch (err) {
       setError('Unable to connect to the server. Make sure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setError('');
+    setMessage('');
+    const storedToken = localStorage.getItem('token');
+
+    if (!storedToken) {
+      setError('You are not currently logged in.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${storedToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || 'Unable to log out securely.');
+        return;
+      }
+
+      localStorage.removeItem('token');
+      setToken(null);
+      setMessage('You have been logged out successfully.');
+    } catch (err) {
+      setError('Unable to connect to the server while logging out.');
     } finally {
       setLoading(false);
     }
@@ -66,6 +106,7 @@ function LoginPage() {
         <h1>Welcome to Chunters</h1>
 
         {error && <div className="alert alert-error">{error}</div>}
+        {message && <div className="alert alert-success">{message}</div>}
 
         <div className="field">
           <label htmlFor="email">University email</label>
@@ -80,6 +121,11 @@ function LoginPage() {
         <button className="btn btn-primary" onClick={handleSignIn} disabled={loading}>
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
+        {token && (
+          <button className="btn btn-secondary" onClick={handleLogout} disabled={loading}>
+            {loading ? 'Logging out...' : 'Logout'}
+          </button>
+        )}
         <button className="btn btn-outline" onClick={() => console.log('Forgot password')}>Forgot password?</button>
         <button className="btn btn-outline" onClick={() => navigate('/signup')}>Sign up</button>
       </div>

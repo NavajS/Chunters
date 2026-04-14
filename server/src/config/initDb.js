@@ -18,9 +18,14 @@ CREATE TABLE IF NOT EXISTS users (
     reset_token_expires TIMESTAMP,
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'warned', 'suspended', 'banned')),
     strike_count INTEGER DEFAULT 0,
+    failed_login_attempts INTEGER DEFAULT 0,
+    lockout_expires TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS lockout_expires TIMESTAMP;
 
 -- Threads: Topics and broader disccussions
 CREATE TABLE IF NOT EXISTS threads (

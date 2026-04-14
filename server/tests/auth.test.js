@@ -87,5 +87,35 @@ jest.mock("nodemailer", () => ({
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toBe("Email and password are required.");
     });
+
+    test("POST /auth/login should reject invalid credentials securely", async () => {
+      const res = await request(app)
+        .post("/api/auth/login")
+        .send({
+          email: "unknown@ufl.edu",
+          password: "wrong-password",
+        });
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.error).toBe("Invalid email or password.");
+    });
+
+    test("POST /auth/logout should require authentication", async () => {
+      const res = await request(app)
+        .post("/api/auth/logout")
+        .send();
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.error).toBe("Authentication required.");
+    });
+
+    test("PUT /auth/update should require authentication", async () => {
+      const res = await request(app)
+        .put("/api/auth/update")
+        .send({ currentPassword: "password" });
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.error).toBe("Authentication required.");
+    });
   
   });
