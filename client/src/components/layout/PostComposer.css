@@ -1,0 +1,86 @@
+.composer {
+  background: #38383e;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.composer-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.composer-avatar svg {
+  width: 20px;
+  height: 20px;
+  color: #5b5fc7;
+}
+
+.composer-body {
+  flex: 1;
+}
+
+.composer-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #e0e0e6;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  padding: 8px 0;
+  border-bottom: 1px solid #50505a;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.composer-input::placeholder {
+  color: #78788a;
+}
+.composer-input:focus {
+  border-bottom-color: #5b5fc7;
+}
+
+.composer-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.composer-hint {
+  color: #78788a;
+  font-size: 11px;
+}
+
+.composer-btn {
+  background: #5b5fc7;
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s, background 0.2s;
+}
+.composer-btn:hover:not(:disabled) {
+  background: #6a6ed4;
+  transform: scale(1.03);
+}
+.composer-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.composer-btn:disabled {
+  background: #4a4a6a;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
