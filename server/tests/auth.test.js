@@ -62,7 +62,7 @@ jest.mock("nodemailer", () => ({
         });
   
       expect(res.statusCode).toBe(400);
-      expect(res.body.error).toBe("Only ufl.edu email addresses are allowed.");
+      expect(res.body.error).toBe("Only @ufl.edu email addresses are allowed.");
     });
   
     /**

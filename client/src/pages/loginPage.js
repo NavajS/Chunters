@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BackgroundCards from '../components/layout/BackgroundCards';
 import './loginPage.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -43,8 +43,8 @@ function LoginPage() {
       }
 
       localStorage.setItem('token', data.token);
-      setToken(data.token);
-      setMessage('Sign in successful. You are now logged in.');
+      console.log('Login successful:', data);
+      navigate('/threads');
     } catch (err) {
       setError('Unable to connect to the server. Make sure the backend is running.');
     } finally {
