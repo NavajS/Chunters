@@ -110,6 +110,27 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Trigger function to auto-update updated_at on row modification
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER update_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE OR REPLACE TRIGGER update_threads_updated_at
+    BEFORE UPDATE ON threads
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE OR REPLACE TRIGGER update_posts_updated_at
+    BEFORE UPDATE ON posts
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_threads_created_at ON threads(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_threads_category ON threads(category);
