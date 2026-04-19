@@ -1,19 +1,23 @@
 const express = require('express');
-const router = express.Router();
-feature/auth-security
 const {
   signup,
   login,
   logout,
   updateCredentials,
   verifyEmail,
+  forgotPassword,
+  resetPassword,
 } = require('../controllers/authController');
-const authenticate = require('../middleware/authMiddleware');
+const { requireAuth } = require('../middleware/authMiddleware');
+
+const router = express.Router();
 
 router.post('/signup', signup);
 router.post('/login', login);
-router.post('/logout', authenticate, logout);
-router.put('/update', authenticate, updateCredentials);
+router.post('/logout', requireAuth, logout);
+router.put('/update', requireAuth, updateCredentials);
 router.get('/verify-email/:token', verifyEmail);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
 
 module.exports = router;

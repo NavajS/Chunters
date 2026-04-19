@@ -52,6 +52,13 @@ CREATE TABLE IF NOT EXISTS posts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS thread_likes (
+    thread_id UUID NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (thread_id, user_id)
+);
+
 -- Reports: Users submit a report on content they believe violate TOS
 CREATE TABLE IF NOT EXISTS reports (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -140,6 +147,8 @@ CREATE OR REPLACE TRIGGER update_posts_updated_at
 CREATE INDEX IF NOT EXISTS idx_threads_created_at ON threads(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_threads_category ON threads(category);
 CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON posts(thread_id);
+CREATE INDEX IF NOT EXISTS idx_thread_likes_thread_id ON thread_likes(thread_id);
+CREATE INDEX IF NOT EXISTS idx_thread_likes_user_id ON thread_likes(user_id);
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 CREATE INDEX IF NOT EXISTS idx_bans_user_id ON bans(user_id);
 CREATE INDEX IF NOT EXISTS idx_bans_active ON bans(is_active);

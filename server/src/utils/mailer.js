@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
@@ -11,15 +11,22 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+function getBackendUrl() {
+  return process.env.BACKEND_URL || 'http://localhost:5050';
+}
+
+function getClientUrl() {
+  return process.env.CLIENT_URL || 'http://localhost:3000';
+}
+
 async function sendVerificationEmail(toEmail, token) {
-  // Use BACKEND_URL from your .env so the user clicks and hits your Express server directly
-  const verificationLink = `${process.env.BACKEND_URL || 'http://localhost:5050'}/api/auth/verify-email/${token}`;
+  const verificationLink = `${getBackendUrl()}/api/auth/verify-email/${token}`;
 
   try {
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: toEmail,
-      subject: "Verify your Chunters account",
+      subject: 'Verify your Chunters account',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
           <h2 style="color: #5b5fc7;">Verify your email</h2>
@@ -34,12 +41,40 @@ async function sendVerificationEmail(toEmail, token) {
         </div>
       `,
     });
-    console.log(`✉️ Verification email sent to: ${toEmail}`);
   } catch (error) {
-    console.error('❌ Error sending verification email:', error);
-    // Throwing the error lets the auth controller know it failed so it can tell the user
+    console.error('Error sending verification email:', error);
     throw new Error('Failed to send verification email');
   }
 }
 
-module.exports = { transporter, sendVerificationEmail };
+async function sendPasswordResetEmail(toEmail, token) {
+  const resetLink = `${getClientUrl()}/reset-password/${token}`;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: toEmail,
+      subject: 'Reset your Chunters password',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
+          <h2 style="color: #5b5fc7;">Password reset request</h2>
+          <p>We received a request to reset your Chunters password.</p>
+          <p>Use the link below to choose a new password. This link expires in 1 hour.</p>
+          <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #5b5fc7; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">Reset Password</a>
+          <p>If the button doesn't work, copy and paste this link into your browser:</p>
+          <p>${resetLink}</p>
+          <p>If you did not request this, you can ignore this email.</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw new Error('Failed to send password reset email');
+  }
+}
+
+module.exports = {
+  transporter,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+};

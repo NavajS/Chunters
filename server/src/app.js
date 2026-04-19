@@ -1,5 +1,6 @@
 const express = require('express');
 const authRoutes = require('./routes/authRoutes');
+const threadRoutes = require('./routes/threadRoutes');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -28,6 +29,7 @@ const authLimiter = rateLimit({
 
 app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRoutes);
+app.use('/api/threads', threadRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });

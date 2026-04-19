@@ -2,18 +2,17 @@ import React from 'react';
 import './Sidebar.css';
 
 const categories = [
-  { key: 'wellness', label: 'Wellness', color: '#f0a878', count: 24 },
-  { key: 'academics', label: 'Academics', color: '#e8927a', count: 18 },
-  { key: 'social', label: 'Social', color: '#e07090', count: 31 },
-  { key: 'support', label: 'Support', color: '#7088c8', count: 12 },
-  { key: 'safe-space', label: 'Safe space', color: '#c8a060', count: 9 },
-  { key: 'general', label: 'General', color: '#50a878', count: 47 },
+  { key: 'wellness', label: 'Wellness', color: '#f0a878' },
+  { key: 'academics', label: 'Academics', color: '#e8927a' },
+  { key: 'social', label: 'Social', color: '#e07090' },
+  { key: 'support', label: 'Support', color: '#7088c8' },
+  { key: 'safe-space', label: 'Safe space', color: '#c8a060' },
+  { key: 'general', label: 'General', color: '#50a878' },
 ];
 
-function Sidebar({ activeCategory, onSelectCategory, onNewThread }) {
+function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts = {}, onLogout }) {
   return (
     <aside className="sidebar">
-      {/* Logo / header */}
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -28,7 +27,6 @@ function Sidebar({ activeCategory, onSelectCategory, onNewThread }) {
         </div>
       </div>
 
-      {/* Categories */}
       <div className="sidebar-section">
         <div className="sidebar-section-title">Threads</div>
         <div className="sidebar-list">
@@ -40,16 +38,21 @@ function Sidebar({ activeCategory, onSelectCategory, onNewThread }) {
             >
               <span className="sidebar-dot" style={{ background: cat.color }} />
               <span className="sidebar-label">{cat.label}</span>
-              <span className="sidebar-count">{cat.count}</span>
+              <span className="sidebar-count">{categoryCounts[cat.key] ?? 0}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* New thread button */}
       <button className="sidebar-new-btn" onClick={onNewThread}>
         + New thread
       </button>
+
+      {onLogout && (
+        <button className="sidebar-logout-btn" onClick={onLogout}>
+          Log out
+        </button>
+      )}
     </aside>
   );
 }

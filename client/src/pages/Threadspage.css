@@ -74,6 +74,31 @@
   width: 100%;
 }
 
+.threads-message {
+  border-radius: 10px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.threads-message.error {
+  background: rgba(224, 112, 144, 0.16);
+  border: 1px solid rgba(224, 112, 144, 0.5);
+  color: #f2a3b8;
+}
+
+.threads-message.success {
+  background: rgba(94, 200, 140, 0.14);
+  border: 1px solid rgba(94, 200, 140, 0.44);
+  color: #9ce0b8;
+}
+
+.threads-message.muted {
+  background: rgba(112, 136, 200, 0.12);
+  border: 1px solid rgba(112, 136, 200, 0.32);
+  color: #a9b8e8;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 720px) {
   .threads-page { flex-direction: column; }
