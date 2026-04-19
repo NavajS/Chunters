@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import './PostComposer.css';
 
-function PostComposer({ onPost }) {
+function PostComposer({ onPost, disabled = false }) {
   const [content, setContent] = useState('');
 
-  const handlePost = () => {
-    if (!content.trim()) return;
-    if (onPost) onPost(content);
-    console.log('New post:', content);
-    setContent('');
+  const handlePost = async () => {
+    if (!content.trim() || disabled) return;
+
+    try {
+      if (onPost) {
+        await onPost(content);
+      }
+      setContent('');
+    } catch (error) {
+      console.error('Failed to publish thread:', error);
+    }
   };
 
   return (
@@ -25,13 +31,14 @@ function PostComposer({ onPost }) {
           className="composer-input"
           placeholder="Share your thoughts anonymously..."
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(event) => setContent(event.target.value)}
           rows={2}
+          disabled={disabled}
         />
         <div className="composer-footer">
           <span className="composer-hint">Posting as Anonymous Gator</span>
-          <button className="composer-btn" onClick={handlePost} disabled={!content.trim()}>
-            Post
+          <button className="composer-btn" onClick={handlePost} disabled={!content.trim() || disabled}>
+            {disabled ? 'Posting...' : 'Post'}
           </button>
         </div>
       </div>

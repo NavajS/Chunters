@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BackgroundCards from '../components/layout/BackgroundCards';
 import './SignUpView.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
 function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -11,12 +11,14 @@ function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [devVerificationLink, setDevVerificationLink] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSignUp = async () => {
     setError('');
     setSuccess('');
+    setDevVerificationLink('');
 
     if (!email.trim().toLowerCase().endsWith('@ufl.edu')) {
       setError('Only @ufl.edu emails are accepted.');
@@ -47,10 +49,11 @@ function SignUpPage() {
       }
 
       setSuccess(data.message || 'Account created! Check your email to verify.');
+      setDevVerificationLink(data.verificationLink || '');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
-    } catch (err) {
+    } catch (_err) {
       setError('Unable to connect to the server. Make sure the backend is running.');
     } finally {
       setLoading(false);
@@ -75,20 +78,25 @@ function SignUpPage() {
 
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
+        {devVerificationLink && (
+          <div className="alert alert-success">
+            Dev verify link: <a href={devVerificationLink}>{devVerificationLink}</a>
+          </div>
+        )}
 
         <div className="field">
           <label htmlFor="signup-email">University email</label>
-          <input id="signup-email" type="email" placeholder="gator@ufl.edu" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input id="signup-email" type="email" placeholder="gator@ufl.edu" value={email} onChange={(event) => setEmail(event.target.value)} />
         </div>
 
         <div className="field">
           <label htmlFor="signup-password">Password</label>
-          <input id="signup-password" type="password" placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input id="signup-password" type="password" placeholder="At least 8 characters" value={password} onChange={(event) => setPassword(event.target.value)} />
         </div>
 
         <div className="field">
           <label htmlFor="signup-confirm">Confirm password</label>
-          <input id="signup-confirm" type="password" placeholder="Re-enter your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+          <input id="signup-confirm" type="password" placeholder="Re-enter your password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
         </div>
 
         <button className="btn btn-primary" onClick={handleSignUp} disabled={loading}>

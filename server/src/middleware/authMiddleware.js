@@ -1,23 +1,49 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'replace_this_with_a_secure_secret';
+function extractToken(authorizationHeader = '') {
+  const header = authorizationHeader.toString().trim();
+  if (!header) return null;
 
-function authenticate(req, res, next) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authentication required.' });
+  if (header.toLowerCase().startsWith('bearer ')) {
+    return header.slice(7).trim() || null;
   }
 
-  const token = authHeader.split(' ')[1];
+  return header;
+}
+
+function parseAuthHeader(authorizationHeader) {
+  const token = extractToken(authorizationHeader);
+  if (!token) {
+    return { token: null, user: null };
+  }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired token.' });
+    const user = jwt.verify(token, process.env.JWT_SECRET);
+    return { token, user };
+  } catch (_error) {
+    return { token, user: null };
   }
 }
 
-module.exports = authenticate;
+function requireAuth(req, res, next) {
+  const { token, user } = parseAuthHeader(req.headers.authorization);
+
+  if (!token || !user) {
+    return res.status(401).json({ error: 'Authentication required.' });
+  }
+
+  req.user = user;
+  return next();
+}
+
+function maybeAuth(req, _res, next) {
+  const { user } = parseAuthHeader(req.headers.authorization);
+  req.user = user || null;
+  return next();
+}
+
+module.exports = {
+  requireAuth,
+  maybeAuth,
+  authenticate: requireAuth,
+};

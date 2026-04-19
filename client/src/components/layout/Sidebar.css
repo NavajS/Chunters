@@ -132,3 +132,22 @@
 .sidebar-new-btn:active {
   transform: scale(0.97);
 }
+
+.sidebar-logout-btn {
+  margin-top: 10px;
+  background: transparent;
+  color: #f2a3b8;
+  border: 1px solid rgba(224, 112, 144, 0.5);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(224, 112, 144, 0.12);
+  transform: scale(1.02);
+}
