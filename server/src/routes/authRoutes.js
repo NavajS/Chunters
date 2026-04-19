@@ -1,11 +1,19 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
+feature/auth-security
+const {
+  signup,
+  login,
+  logout,
+  updateCredentials,
+  verifyEmail,
+} = require('../controllers/authController');
+const authenticate = require('../middleware/authMiddleware');
 
-// Ensure all three are destructured here!
-const { signup, verifyEmail, login } = require("../controllers/authController");
-
-router.post("/signup", signup);
-router.get("/verify-email/:token", verifyEmail);
-router.post("/login", login);
+router.post('/signup', signup);
+router.post('/login', login);
+router.post('/logout', authenticate, logout);
+router.put('/update', authenticate, updateCredentials);
+router.get('/verify-email/:token', verifyEmail);
 
 module.exports = router;
