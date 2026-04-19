@@ -4,40 +4,36 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 const { sendVerificationEmail } = require("../utils/mailer");
 
-/**
- * Checks if the email domain is allowed (e.g., ufl.edu)
- */
 function isUFLEmail(email) {
   if (typeof email !== 'string') return false;
 
   const allowedDomains = (process.env.ALLOWED_EMAIL_DOMAINS || "ufl.edu")
     .split(",")
     .map(domain => domain.trim().toLowerCase());
-
-  const emailDomain = email.split("@")[1]?.toLowerCase();
+  // trim before splitting so leading/trailing spaces in the address don't fool the domain check
+  const emailDomain = email.trim().split("@")[1]?.toLowerCase();
   return allowedDomains.includes(emailDomain);
 }
 
-/**
- * SIGNUP: Handles user registration, hashing, and sending verification email
- */
 async function signup(req, res) {
-  console.log("--- START SIGNUP PROCESS ---");
+  const client = await pool.connect();
   try {
     const { email, password } = req.body;
-    console.log("1. Request Body received for:", email);
 
     if (!email || !password) {
-      console.log("❌ Validation Failed: Missing email or password");
       return res.status(400).json({ error: "Email and password are required." });
     }
 
+    // Server-side password length guard (mirrors frontend, but can't be bypassed via direct API calls)
+    if (password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters." });
+    }
+
     if (!isUFLEmail(email)) {
-      console.log("❌ Validation Failed: Non-UFL email used:", email);
       return res.status(400).json({ error: "Only @ufl.edu email addresses are allowed." });
     }
 
-    const normalizedEmail = email.toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
 
     console.log("2. Checking database for existing user...");
     const existingUser = await pool.query(
@@ -46,29 +42,27 @@ async function signup(req, res) {
     );
 
     if (existingUser.rows.length > 0) {
-      console.log("❌ Signup Failed: User already exists");
       return res.status(400).json({ error: "An account with this email already exists." });
     }
 
-    console.log("3. Hashing password...");
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    console.log("4. Inserting new user into database...");
-    await pool.query(
+    // BEGIN transaction — if the email send fails we roll back the insert so
+    // the user can try signing up again rather than being permanently locked out.
+    await client.query("BEGIN");
+
+    await client.query(
       `INSERT INTO users (email, password_hash, is_verified, verification_token, verification_expires)
        VALUES ($1, $2, $3, $4, $5)`,
       [normalizedEmail, passwordHash, false, verificationToken, verificationExpires]
     );
-    console.log("✅ User inserted successfully.");
 
-    console.log("5. Attempting to send verification email (This is usually where hangs occur)...");
-    // If the server stops here, your Mailer/Nodemailer settings are incorrect
     await sendVerificationEmail(normalizedEmail, verificationToken);
-    console.log("✅ Email sent successfully.");
 
-    console.log("6. Sending 201 Success Response to Frontend.");
+    await client.query("COMMIT");
+
     return res.status(201).json({
       message: 'Account created. Please check your email to verify your account.',
     });
@@ -246,14 +240,12 @@ async function updateCredentials(req, res) {
     // Important: Always send a response even on error so frontend doesn't hang
     return res.status(500).json({ error: "Server error during signup." });
   } finally {
-    console.log("--- END SIGNUP PROCESS ---");
+    client.release();
   }
 }
 
-/**
- * VERIFY EMAIL: Flips the is_verified switch in the DB
- */
 async function verifyEmail(req, res) {
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
   try {
     const { token } = req.params;
 
@@ -263,19 +255,19 @@ async function verifyEmail(req, res) {
     console.log("Verifying token:", token);
 
     const result = await pool.query(
-      `SELECT id, is_verified FROM users 
+      `SELECT id, is_verified FROM users
        WHERE verification_token = $1 AND verification_expires > NOW()`,
       [token]
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).send("<h1>Invalid or expired verification token.</h1>");
+      return res.redirect(`${clientUrl}?error=invalid_token`);
     }
 
     const user = result.rows[0];
 
     if (user.is_verified) {
-      return res.send("<h1>Email is already verified. You can now log in.</h1>");
+      return res.redirect(`${clientUrl}?verified=already`);
     }
 
     await pool.query(
@@ -283,7 +275,7 @@ async function verifyEmail(req, res) {
       [user.id]
     );
 
-    return res.send("<h1>Email verified successfully!</h1><p>You can now return to the app and sign in.</p>");
+    return res.redirect(`${clientUrl}?verified=1`);
   } catch (error) {
     console.error('Verification error:', error);
     return res.status(500).send('Server error during email verification.');
@@ -297,10 +289,13 @@ module.exports = { signup, login, logout, updateCredentials, verifyEmail };
 async function login(req, res) {
   try {
     const { email, password } = req.body;
-    console.log("Login attempt for:", email);
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required." });
+    }
 
     const result = await pool.query(
-      "SELECT id, email, password_hash, is_verified FROM users WHERE email = $1",
+      "SELECT id, email, password_hash, is_verified, status FROM users WHERE email = $1",
       [email.trim().toLowerCase()]
     );
 
@@ -314,6 +309,10 @@ async function login(req, res) {
       return res.status(403).json({ error: "Please verify your email before logging in." });
     }
 
+    if (user.status === "suspended" || user.status === "banned") {
+      return res.status(403).json({ error: "Your account has been suspended. Please contact support." });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid email or password." });
@@ -322,7 +321,7 @@ async function login(req, res) {
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
 
     return res.json({

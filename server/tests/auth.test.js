@@ -1,8 +1,13 @@
-/**
- * Mock Nodemailer so tests do not send real emails.
- * Instead of connecting to Gmail SMTP, Jest will pretend the email send succeeded.
- * This keeps tests fast, safe, and independent of external services.
- */
+// Prevent any real database connections during tests.
+jest.mock("../src/config/db", () => ({
+  query: jest.fn(),
+  connect: jest.fn().mockResolvedValue({
+    query: jest.fn(),
+    release: jest.fn(),
+  }),
+}));
+
+// Mock Nodemailer so tests do not send real emails.
 jest.mock("nodemailer", () => ({
     createTransport: jest.fn().mockReturnValue({
       sendMail: jest.fn().mockResolvedValue(true),

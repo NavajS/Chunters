@@ -9,9 +9,14 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// We only log the connection, we NEVER call process.exit here
 pool.on('connect', () => {
-  console.log('🐘 PostgreSQL connected successfully');
+  console.log('PostgreSQL connected successfully');
+});
+
+// Without this handler an idle-client error from pg becomes an unhandled
+// exception that can crash the process when the DB drops mid-run.
+pool.on('error', (err) => {
+  console.error('Unexpected database pool error:', err.message);
 });
 
 module.exports = pool;
