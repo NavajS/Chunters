@@ -5,7 +5,8 @@ const pool = require("../config/db");
 const { sendVerificationEmail } = require("../utils/mailer");
 
 function isUFLEmail(email) {
-  if (typeof email !== "string") return false;
+  if (typeof email !== 'string') return false;
+
   const allowedDomains = (process.env.ALLOWED_EMAIL_DOMAINS || "ufl.edu")
     .split(",")
     .map(domain => domain.trim().toLowerCase());
@@ -34,8 +35,9 @@ async function signup(req, res) {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const existingUser = await client.query(
-      "SELECT id FROM users WHERE email = $1",
+    console.log("2. Checking database for existing user...");
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
       [normalizedEmail]
     );
 
@@ -44,7 +46,7 @@ async function signup(req, res) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     // BEGIN transaction — if the email send fails we roll back the insert so
@@ -62,12 +64,180 @@ async function signup(req, res) {
     await client.query("COMMIT");
 
     return res.status(201).json({
-      message: "Account created! Please check your @ufl.edu email to verify your account.",
+      message: 'Account created. Please check your email to verify your account.',
     });
 
   } catch (error) {
-    await client.query("ROLLBACK").catch(() => {});
-    console.error("Signup error:", error.message);
+    console.error('Signup error:', error);
+    return res.status(500).json({ error: 'Server error during signup.' });
+  }
+}
+
+async function login(req, res) {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    const result = await pool.query(
+      `SELECT id, email, password_hash, role, is_verified, status, failed_login_attempts, lockout_expires
+       FROM users
+       WHERE email = $1`,
+      [normalizedEmail]
+    );
+
+    const user = result.rows[0];
+    const passwordHash = user ? user.password_hash : DUMMY_PASSWORD_HASH;
+    const passwordMatches = await bcrypt.compare(password, passwordHash);
+    const now = new Date();
+
+    if (user?.lockout_expires && new Date(user.lockout_expires) > now) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    const invalidCredentials = !user || !passwordMatches || !user.is_verified || user.status !== 'active';
+
+    if (invalidCredentials) {
+      if (user) {
+        const failedAttempts = (user.failed_login_attempts || 0) + 1;
+        const lockoutExpires = failedAttempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+
+        await pool.query(
+          `UPDATE users
+           SET failed_login_attempts = $1,
+               lockout_expires = $2
+           WHERE id = $3`,
+          [failedAttempts, lockoutExpires, user.id]
+        );
+      }
+
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    await pool.query(
+      `UPDATE users
+       SET failed_login_attempts = 0,
+           lockout_expires = NULL
+       WHERE id = $1`,
+      [user.id]
+    );
+
+    const token = generateToken(user);
+
+    return res.json({
+      token,
+      user: {
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ error: 'Server error during login.' });
+  }
+}
+
+async function logout(req, res) {
+  return res.json({ message: 'Logout successful.' });
+}
+
+async function updateCredentials(req, res) {
+  try {
+    const { currentPassword, newPassword, newEmail } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    if (!currentPassword) {
+      return res.status(400).json({ error: 'Current password is required.' });
+    }
+
+    const result = await pool.query(
+      `SELECT id, email, password_hash
+       FROM users
+       WHERE id = $1`,
+      [userId]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const passwordMatches = await bcrypt.compare(currentPassword, user.password_hash);
+
+    if (!passwordMatches) {
+      return res.status(401).json({ error: 'Invalid current password.' });
+    }
+
+    const updates = [];
+    const params = [];
+    let verificationToken;
+    let normalizedNewEmail;
+
+    if (newPassword) {
+      updates.push(`password_hash = $${params.length + 1}`);
+      params.push(await bcrypt.hash(newPassword, 10));
+    }
+
+    if (newEmail) {
+      normalizedNewEmail = newEmail.toLowerCase();
+
+      if (!isUFLEmail(normalizedNewEmail)) {
+        return res.status(400).json({ error: 'Only ufl.edu email addresses are allowed.' });
+      }
+
+      if (normalizedNewEmail !== user.email) {
+        const emailCheck = await pool.query(
+          `SELECT id FROM users WHERE email = $1`,
+          [normalizedNewEmail]
+        );
+
+        if (emailCheck.rows.length > 0) {
+          return res.status(400).json({ error: 'This email is already in use.' });
+        }
+
+        verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        updates.push(`email = $${params.length + 1}`);
+        params.push(normalizedNewEmail);
+        updates.push(`is_verified = false`);
+        updates.push(`verification_token = $${params.length + 1}`);
+        params.push(verificationToken);
+        updates.push(`verification_expires = $${params.length + 1}`);
+        params.push(verificationExpires);
+      }
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No credential changes provided.' });
+    }
+
+    updates.push('updated_at = NOW()');
+    params.push(user.id);
+
+    await pool.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${params.length}`,
+      params
+    );
+
+    if (verificationToken && normalizedNewEmail) {
+      await sendVerificationEmail(normalizedNewEmail, verificationToken);
+    }
+
+    return res.json({ message: 'Login credentials updated successfully.' });
+  } catch (error) {
+    console.error('Update credentials error:', error);
+    return res.status(500).json({ error: 'Server error during credential update.' });
+    console.error("❌ SIGNUP ERROR AT STEP:", error.message);
+    // Important: Always send a response even on error so frontend doesn't hang
     return res.status(500).json({ error: "Server error during signup." });
   } finally {
     client.release();
@@ -78,6 +248,11 @@ async function verifyEmail(req, res) {
   const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
   try {
     const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).send('Missing verification token.');
+    }
+    console.log("Verifying token:", token);
 
     const result = await pool.query(
       `SELECT id, is_verified FROM users
@@ -102,11 +277,15 @@ async function verifyEmail(req, res) {
 
     return res.redirect(`${clientUrl}?verified=1`);
   } catch (error) {
-    console.error("Verification error:", error);
-    return res.redirect(`${process.env.CLIENT_URL || "http://localhost:3000"}?error=server_error`);
+    console.error('Verification error:', error);
+    return res.status(500).send('Server error during email verification.');
   }
 }
 
+module.exports = { signup, login, logout, updateCredentials, verifyEmail };
+/**
+ * LOGIN: Checks credentials and issues a JWT token
+ */
 async function login(req, res) {
   try {
     const { email, password } = req.body;
