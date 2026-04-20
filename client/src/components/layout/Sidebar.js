@@ -1,5 +1,6 @@
 import React from 'react';
 import './Sidebar.css';
+import { useNavigate } from 'react-router-dom';
 
 const categories = [
   { key: 'wellness', label: 'Wellness', color: '#f0a878' },
@@ -12,6 +13,16 @@ const categories = [
 
 // Renders the left navigation rail used by the thread feed screen.
 function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts = {}, onLogout, onAccount }) {
+  const getUserRole = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role;
+    } catch { return null; }
+  };
+  const navigate = useNavigate();
+  const userRole = getUserRole();
   return (
     <aside className="sidebar">
       {/* Branding block shown at the top of the sidebar. */}
@@ -38,6 +49,7 @@ function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts
               key={cat.key}
               className={`sidebar-item ${activeCategory === cat.key ? 'active' : ''}`}
               onClick={() => onSelectCategory(cat.key)}
+              
             >
               <span className="sidebar-dot" style={{ background: cat.color }} />
               <span className="sidebar-label">{cat.label}</span>
@@ -46,7 +58,11 @@ function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts
           ))}
         </div>
       </div>
-
+  {userRole === 'admin' && (
+  <button className="sidebar-admin-btn" onClick={() => navigate('/admin')}>
+    Admin panel
+  </button>
+)}
       {/* Action area for creating threads, opening account settings, and logging out. */}
       <div className="sidebar-footer">
         <button className="sidebar-new-btn" onClick={onNewThread}>

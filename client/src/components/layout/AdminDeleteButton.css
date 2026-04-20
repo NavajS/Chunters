@@ -1,0 +1,53 @@
+.admin-delete-btn {
+  background: transparent;
+  border: 1px solid #e06060;
+  color: #e06060;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s;
+}
+.admin-delete-btn:hover {
+  background: #e06060;
+  color: #fff;
+}
+
+.admin-delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-delete-label {
+  color: #e06060;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.admin-delete-yes {
+  background: #e06060;
+  border: none;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.admin-delete-yes:hover { background: #d04a4a; }
+
+.admin-delete-no {
+  background: transparent;
+  border: 1px solid #50505a;
+  color: #d0d0d6;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.admin-delete-no:hover { background: rgba(255,255,255,0.05); }
