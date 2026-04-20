@@ -324,7 +324,13 @@ function ThreadsPage() {
 
     setStatusMessage(data.message || 'Report submitted.');
   };
-
+  const handleThreadRemoved = (threadId) => {
+    setPosts((prev) => prev.filter((t) => t.id !== threadId));
+    setCategoryCounts((prev) => ({
+      ...prev,
+     [activeCategory]: Math.max((prev[activeCategory] || 0) - 1, 0),
+   }));
+  };
   const handleLogout = async () => {
     const token = localStorage.getItem('token');
 
@@ -399,6 +405,7 @@ function ThreadsPage() {
               onReply={handleReplySubmit}
               onToggleLike={handleToggleLike}
               onReport={handleReport}
+              onThreadRemoved={handleThreadRemoved}
             />
           ))}
         </div>
