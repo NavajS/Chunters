@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import './PostComposer.css';
 
+// Renders the input card used to create a new top-level thread from the feed.
 function PostComposer({ onPost, disabled = false }) {
   const [content, setContent] = useState('');
 
+  // Submits a new thread draft and clears the composer when successful.
   const handlePost = async () => {
     if (!content.trim() || disabled) return;
 

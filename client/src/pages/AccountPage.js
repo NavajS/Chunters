@@ -5,6 +5,7 @@ import './AccountPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
+// Renders account settings for profile, credentials, moderation status, and deletion.
 function AccountPage() {
   const navigate = useNavigate();
   const [account, setAccount] = useState(null);
@@ -28,6 +29,7 @@ function AccountPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
+  // Builds authenticated JSON headers for account-management API calls.
   const authHeaders = () => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -37,6 +39,7 @@ function AccountPage() {
     const token = localStorage.getItem('token');
     const headers = { Authorization: `Bearer ${token}` };
 
+    // Loads the current account profile shown in the settings form.
     async function fetchAccount() {
       try {
         const res = await fetch(`${API_URL}/api/auth/account`, { headers });
@@ -49,6 +52,7 @@ function AccountPage() {
       } catch (_) {}
     }
 
+    // Loads moderation standing details for the account status section.
     async function fetchModStatus() {
       try {
         const res = await fetch(`${API_URL}/api/moderation/status`, { headers });
@@ -60,6 +64,7 @@ function AccountPage() {
     fetchModStatus();
   }, [navigate]);
 
+  // Saves the user's display name shown next to posts and replies.
   const handleSaveName = async () => {
     setNameError(''); setNameMessage('');
     if (displayName.length > 50) {
@@ -83,6 +88,7 @@ function AccountPage() {
     }
   };
 
+  // Updates the account password after current-password verification.
   const handleChangePassword = async () => {
     setPassError(''); setPassMessage('');
     if (!currentPassword) { setPassError('Current password is required.'); return; }
@@ -106,6 +112,7 @@ function AccountPage() {
     }
   };
 
+  // Permanently deletes the account after explicit password confirmation.
   const handleDeleteAccount = async () => {
     setDeleteError('');
     if (!deletePassword) { setDeleteError('Password is required to delete your account.'); return; }
@@ -131,12 +138,14 @@ function AccountPage() {
     <div className="page">
       <BackgroundCards />
       <div className="account-card">
+        {/* Account page header with back navigation and signed-in email. */}
         <div className="account-header">
           <button className="account-back-btn" onClick={() => navigate('/threads')}>← Back to threads</button>
           <h1>Account settings</h1>
           {account && <p className="account-email">{account.email}</p>}
         </div>
 
+        {/* Section for updating the public display name used in discussions. */}
         <section className="account-section">
           <h2>Display name</h2>
           <p className="account-hint">Visible to other users. Leave blank to stay fully anonymous.</p>
@@ -158,6 +167,7 @@ function AccountPage() {
           </button>
         </section>
 
+        {/* Section for changing the login password. */}
         <section className="account-section">
           <h2>Change password</h2>
           {passError && <div className="alert alert-error">{passError}</div>}
@@ -179,6 +189,7 @@ function AccountPage() {
           </button>
         </section>
 
+        {/* Section showing moderation status and strike progress. */}
         {modStatus && (
           <section className="account-section">
             <h2>Account standing</h2>
@@ -210,6 +221,7 @@ function AccountPage() {
           </section>
         )}
 
+        {/* High-risk section for irreversible account deletion. */}
         <section className="account-section danger-zone">
           <h2>Account deletion</h2>
           <p className="account-hint">Deleting your account is permanent. All your threads and replies will be removed.</p>

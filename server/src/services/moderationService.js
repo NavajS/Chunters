@@ -3,6 +3,7 @@ const pool = require('../config/db');
 const REPORT_THRESHOLD = 5;
 const STRIKE_THRESHOLD = 3;
 
+// Adds a strike to a user and issues an automatic ban when strike threshold is reached.
 async function strikeAndMaybeBan(client, authorId, strikeReason) {
   const actions = { strikeIssued: false, userBanned: false, strikeCount: 0 };
 
@@ -50,6 +51,7 @@ async function strikeAndMaybeBan(client, authorId, strikeReason) {
   return actions;
 }
 
+// Auto-moderates a thread after report submissions and applies strikes if needed.
 async function checkThreadReportThreshold(threadId) {
   const client = await pool.connect();
   const result = { threadRemoved: false, strikeIssued: false, userBanned: false, reportCount: 0, strikeCount: 0 };
@@ -112,6 +114,7 @@ async function checkThreadReportThreshold(threadId) {
   }
 }
 
+// Auto-moderates a reply post after report submissions and applies strikes if needed.
 async function checkPostReportThreshold(postId) {
   const client = await pool.connect();
   const result = { postRemoved: false, strikeIssued: false, userBanned: false, reportCount: 0, strikeCount: 0 };
@@ -175,6 +178,7 @@ async function checkPostReportThreshold(postId) {
   }
 }
 
+// Checks whether a user account is currently banned.
 async function isUserBanned(userId) {
   try {
     const result = await pool.query('SELECT status FROM users WHERE id = $1', [userId]);
@@ -186,9 +190,7 @@ async function isUserBanned(userId) {
   }
 }
 
-/**
- * Get full moderation status for a user (for frontend display).
- */
+// Returns moderation status details used by the account settings screen.
 async function getUserModerationStatus(userId) {
   try {
     const result = await pool.query(

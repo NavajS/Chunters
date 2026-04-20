@@ -10,9 +10,11 @@ const categories = [
   { key: 'general', label: 'General', color: '#50a878' },
 ];
 
+// Renders the left navigation rail used by the thread feed screen.
 function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts = {}, onLogout, onAccount }) {
   return (
     <aside className="sidebar">
+      {/* Branding block shown at the top of the sidebar. */}
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -27,6 +29,7 @@ function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts
         </div>
       </div>
 
+      {/* Category filter list that controls which feed is displayed. */}
       <div className="sidebar-section">
         <div className="sidebar-section-title">Threads</div>
         <div className="sidebar-list">
@@ -44,6 +47,7 @@ function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts
         </div>
       </div>
 
+      {/* Action area for creating threads, opening account settings, and logging out. */}
       <div className="sidebar-footer">
         <button className="sidebar-new-btn" onClick={onNewThread}>
           + New thread

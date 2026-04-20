@@ -5,6 +5,7 @@ import './loginPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
+// Renders the sign-in screen for existing users.
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,6 +13,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Submits login credentials and stores the session token on success.
   const handleSignIn = async () => {
     setError('');
 
@@ -51,8 +53,10 @@ function LoginPage() {
 
   return (
     <div className="page">
+      {/* Decorative floating cards used as the auth-page background. */}
       <BackgroundCards />
 
+      {/* Main login card with email/password fields and auth actions. */}
       <div className="card">
         <div className="avatar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -83,6 +87,7 @@ function LoginPage() {
         <button className="btn btn-outline" onClick={() => navigate('/signup')}>Sign up</button>
       </div>
 
+      {/* Footer copy that communicates anonymity and domain restrictions. */}
       <div className="footer">
         Your identity stays completely anonymous.<br />
         Only @ufl.edu emails are accepted.

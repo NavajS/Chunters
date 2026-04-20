@@ -11,14 +11,17 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Returns the backend base URL for verification links.
 function getBackendUrl() {
   return process.env.BACKEND_URL || 'http://localhost:5050';
 }
 
+// Returns the frontend base URL for password reset links.
 function getClientUrl() {
   return process.env.CLIENT_URL || 'http://localhost:3000';
 }
 
+// Sends account verification instructions to a newly registered user.
 async function sendVerificationEmail(toEmail, token) {
   const verificationLink = `${getBackendUrl()}/api/auth/verify-email/${token}`;
 
@@ -47,6 +50,7 @@ async function sendVerificationEmail(toEmail, token) {
   }
 }
 
+// Sends a password reset email with a one-time reset link.
 async function sendPasswordResetEmail(toEmail, token) {
   const resetLink = `${getClientUrl()}/reset-password/${token}`;
 

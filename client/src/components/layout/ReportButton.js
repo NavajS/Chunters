@@ -12,6 +12,7 @@ const REPORT_REASONS = [
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
+// Renders the report action and modal flow for threads or replies.
 function ReportButton({ threadId, postId, onPostRemoved }) {
   const [showModal, setShowModal] = useState(false);
   const [reason, setReason] = useState('');
@@ -20,6 +21,7 @@ function ReportButton({ threadId, postId, onPostRemoved }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
+  // Submits a report payload and shows moderation outcome feedback.
   const handleReport = async () => {
     const finalReason = reason === 'Other' ? customReason : reason;
 
@@ -67,6 +69,7 @@ function ReportButton({ threadId, postId, onPostRemoved }) {
     }
   };
 
+  // Closes the modal and resets local form/result state.
   const handleClose = () => {
     setShowModal(false);
     setReason('');
@@ -77,11 +80,13 @@ function ReportButton({ threadId, postId, onPostRemoved }) {
 
   return (
     <>
+      {/* Trigger button placed in thread/reply action rows. */}
       <button className="report-btn" onClick={() => setShowModal(true)}>
         Report
       </button>
 
       {showModal && (
+        /* Modal overlay for selecting reason and submitting a report. */
         <div className="report-overlay" onClick={handleClose}>
           <div className="report-modal" onClick={(e) => e.stopPropagation()}>
             {result ? (

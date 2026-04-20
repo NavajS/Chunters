@@ -171,6 +171,7 @@ CREATE INDEX IF NOT EXISTS idx_appeals_status ON appeals(status);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 `;
 
+// Applies the schema bootstrap SQL so required tables, triggers, and indexes exist.
 async function initializeDatabase() {
     try {
         console.log('🚀 Initializing the database...');

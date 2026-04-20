@@ -5,6 +5,7 @@ import './SignUpView.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
+// Renders the screen where users choose a new password from a reset link.
 function ResetPasswordPage() {
   const navigate = useNavigate();
   const { token } = useParams();
@@ -15,6 +16,7 @@ function ResetPasswordPage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Submits the new password tied to the reset token from the URL.
   const handleResetPassword = async () => {
     setError('');
     setSuccess('');
@@ -56,8 +58,10 @@ function ResetPasswordPage() {
 
   return (
     <div className="page">
+      {/* Decorative floating cards used as the auth-page background. */}
       <BackgroundCards />
 
+      {/* Main reset card with password confirmation fields. */}
       <div className="card">
         <div className="avatar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -99,6 +103,7 @@ function ResetPasswordPage() {
         <button className="btn btn-outline" onClick={() => navigate('/')}>Back to Sign in</button>
       </div>
 
+      {/* Footer reminder about account security. */}
       <div className="footer">
         Keep your account secure with a strong password.
       </div>

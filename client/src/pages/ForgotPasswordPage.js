@@ -5,6 +5,7 @@ import './loginPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
+// Renders the password-reset request screen.
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -13,6 +14,7 @@ function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Requests a password-reset email for the provided account.
   const handleRequestReset = async () => {
     setError('');
     setSuccess('');
@@ -49,8 +51,10 @@ function ForgotPasswordPage() {
 
   return (
     <div className="page">
+      {/* Decorative floating cards used as the auth-page background. */}
       <BackgroundCards />
 
+      {/* Main reset-request card with email input and status messages. */}
       <div className="card">
         <div className="avatar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -86,6 +90,7 @@ function ForgotPasswordPage() {
         <button className="btn btn-outline" onClick={() => navigate('/')}>Back to Sign in</button>
       </div>
 
+      {/* Footer hint explaining when reset emails are sent. */}
       <div className="footer">
         If your account exists and is verified,<br />
         you will receive a reset link by email.

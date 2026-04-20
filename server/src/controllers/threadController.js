@@ -14,12 +14,14 @@ const CATEGORY_SET = new Set(CATEGORIES);
 
 let likeTableInitPromise = null;
 
+// Validates whether a value is a UUID string.
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     (value || '').toString().trim(),
   );
 }
 
+// Ensures the thread-like table and indexes exist before like operations run.
 async function ensureLikeTable() {
   if (!likeTableInitPromise) {
     likeTableInitPromise = (async () => {
@@ -43,11 +45,13 @@ async function ensureLikeTable() {
   return likeTableInitPromise;
 }
 
+// Normalizes category input and ensures it matches an allowed category.
 function normalizeCategory(input) {
   const category = (input || 'general').toString().trim().toLowerCase();
   return CATEGORY_SET.has(category) ? category : null;
 }
 
+// Builds a safe thread title from explicit title input or fallback content text.
 function buildTitle(title, content) {
   const trimmedTitle = (title || '').toString().trim();
   if (trimmedTitle) return trimmedTitle.slice(0, 200);
@@ -56,11 +60,13 @@ function buildTitle(title, content) {
   return normalizedContent.slice(0, 80) || 'Untitled thread';
 }
 
+// Parses an integer with a fallback value when parsing fails.
 function toInt(value, fallback) {
   const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) ? fallback : parsed;
 }
 
+// Maps a DB thread row into the thread shape returned to the frontend.
 function mapThreadRow(row) {
   return {
     id: row.id,
@@ -77,6 +83,7 @@ function mapThreadRow(row) {
   };
 }
 
+// Maps a DB post row into the post shape returned to the frontend.
 function mapPostRow(row) {
   return {
     id: row.id,
@@ -92,6 +99,7 @@ function mapPostRow(row) {
   };
 }
 
+// Retrieves a non-deleted thread or returns null if it does not exist.
 async function getThreadOrNull(threadId) {
   const query = `
     SELECT id, user_id, is_locked
@@ -134,6 +142,7 @@ const threadDetailQuery = `
   WHERE t.id = $1 AND t.is_deleted = FALSE
 `;
 
+// Lists threads for the feed with pagination, category filtering, and sorting.
 async function listThreads(req, res) {
   try {
     await ensureLikeTable();
@@ -194,6 +203,7 @@ async function listThreads(req, res) {
   }
 }
 
+// Returns one thread with aggregated reply and like metadata.
 async function getThread(req, res) {
   try {
     await ensureLikeTable();
@@ -217,6 +227,7 @@ async function getThread(req, res) {
   }
 }
 
+// Creates a new top-level thread authored by the authenticated user.
 async function createThread(req, res) {
   try {
     const { title, content, category } = req.body;
@@ -274,6 +285,7 @@ async function createThread(req, res) {
   }
 }
 
+// Returns aggregate thread counts per category for sidebar stats.
 async function listThreadMeta(_req, res) {
   try {
     const { rows } = await pool.query(`
@@ -301,6 +313,7 @@ async function listThreadMeta(_req, res) {
   }
 }
 
+// Lists non-deleted replies for a specific thread in chronological order.
 async function listThreadPosts(req, res) {
   try {
     const { threadId } = req.params;
@@ -345,6 +358,7 @@ async function listThreadPosts(req, res) {
   }
 }
 
+// Creates a new reply inside a thread, optionally as a nested reply.
 async function createThreadPost(req, res) {
   try {
     const { threadId } = req.params;
@@ -419,6 +433,7 @@ async function createThreadPost(req, res) {
   }
 }
 
+// Toggles the authenticated user's like on a thread and returns updated count.
 async function toggleThreadLike(req, res) {
   try {
     await ensureLikeTable();
@@ -470,6 +485,7 @@ async function toggleThreadLike(req, res) {
   }
 }
 
+// Toggles the authenticated user's like on a reply and returns updated count.
 async function togglePostLike(req, res) {
   try {
     const { threadId, postId } = req.params;
@@ -521,6 +537,7 @@ async function togglePostLike(req, res) {
   }
 }
 
+// Submits a report for a thread and triggers auto-moderation checks.
 async function reportThread(req, res) {
   try {
     const { threadId } = req.params;
@@ -583,6 +600,7 @@ async function reportThread(req, res) {
   }
 }
 
+// Submits a report for a reply and triggers auto-moderation checks.
 async function reportPost(req, res) {
   try {
     const { threadId, postId } = req.params;

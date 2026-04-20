@@ -2,6 +2,7 @@ import React from 'react';
 import './ThreadPost.css';
 import ReportButton from './ReportButton';
 
+// Renders a thread preview card in the feed with reply, like, and report actions.
 function ThreadPost({
   post,
   onToggleLike,
@@ -25,6 +26,7 @@ function ThreadPost({
 
   return (
     <div className="post">
+      {/* Card header for avatar, author identity, relative time, and category tag. */}
       <div className="post-header">
         <div className="post-avatar" style={{ background: avatarBg, color: avatarColor }}>
           {initials}
@@ -44,6 +46,7 @@ function ThreadPost({
         )}
       </div>
 
+      {/* Clickable thread preview that opens the full discussion page. */}
       <p
         className="post-content post-content--clickable"
         onClick={() => onViewThread && onViewThread(id)}
@@ -54,6 +57,7 @@ function ThreadPost({
         {content}
       </p>
 
+      {/* Inline actions for opening replies, toggling likes, and reporting content. */}
       <div className="post-actions">
         <button
           className="post-action"
