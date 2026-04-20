@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 
-const REPORT_THRESHOLD = 5;
+const REPORT_THRESHOLD = 1;
 const STRIKE_THRESHOLD = 3;
 
 // Adds a strike to a user and issues an automatic ban when strike threshold is reached.
