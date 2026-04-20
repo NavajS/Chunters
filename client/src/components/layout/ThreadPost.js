@@ -1,7 +1,6 @@
 import React from 'react';
 import './ThreadPost.css';
 import ReportButton from './ReportButton';
-import AdminDeleteButton from './AdminDeleteButton';
 
 // Renders a thread preview card in the feed with reply, like, and report actions.
 function ThreadPost({
@@ -24,16 +23,6 @@ function ThreadPost({
     likes,
     likedByMe,
   } = post;
-   const getUserRole = () => {
-    try {
-     const token = localStorage.getItem('token');
-     if (!token) return null;
-     const payload = JSON.parse(atob(token.split('.')[1]));
-     return payload.role;
-   } catch { return null; }
-  };
-
-const userRole = getUserRole();
 
   return (
     <div className="post">
@@ -89,9 +78,6 @@ const userRole = getUserRole();
           {likes}
         </button>
         <ReportButton threadId={id} onPostRemoved={() => onThreadRemoved && onThreadRemoved(id)} />
-          {(userRole === 'admin' || userRole === 'moderator') && (
-          <AdminDeleteButton threadId={id} onDeleted={onThreadRemoved} />
-        )}
       </div>
     </div>
   );

@@ -18,9 +18,7 @@ function getClientUrl() {
   return process.env.CLIENT_URL || 'http://localhost:3000';
 }
 
-/**
- * Checks if the email domain is allowed (e.g., ufl.edu)
- */
+// Validates that an email belongs to one of the allowed domains.
 function isUFLEmail(email) {
   if (typeof email !== 'string') return false;
 
@@ -47,18 +45,13 @@ function buildAuthToken(user) {
   );
 }
 
-/**
- * SIGNUP: Handles user registration, hashing, and sending verification email
- */
+// Registers a new user account and triggers email verification.
 async function signup(req, res) {
-  console.log("--- START SIGNUP PROCESS ---");
   try {
     const email = normalizeEmail(req.body.email);
     const password = (req.body.password || '').toString();
-    console.log("1. Request Body received for:", email);
 
     if (!email || !password) {
-      console.log("❌ Validation Failed: Missing email or password");
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
@@ -67,35 +60,28 @@ async function signup(req, res) {
     }
 
     if (!isUFLEmail(email)) {
-      console.log("❌ Validation Failed: Non-UFL email used:", email);
       return res.status(400).json({ error: 'Only @ufl.edu email addresses are allowed.' });
     }
 
-    console.log("2. Checking database for existing user...");
     const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existingUser.rows.length > 0) {
-      console.log("❌ Signup Failed: User already exists");
       return res.status(400).json({ error: 'An account with this email already exists.' });
     }
 
-    console.log("3. Hashing password...");
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    console.log("4. Inserting new user into database...");
     await pool.query(
-      `INSERT INTO users (email, password_hash, is_verified, verification_token, verification_expires)
-       VALUES ($1, $2, $3, $4, $5)`,
+      `
+      INSERT INTO users (email, password_hash, is_verified, verification_token, verification_expires)
+      VALUES ($1, $2, $3, $4, $5)
+      `,
       [email, passwordHash, false, verificationToken, verificationExpires],
     );
-    console.log("✅ User inserted successfully.");
 
-    console.log("5. Attempting to send verification email (This is usually where hangs occur)...");
     try {
       await sendVerificationEmail(email, verificationToken);
-      console.log("✅ Email sent successfully.");
-      console.log("6. Sending 201 Success Response to Frontend.");
       return res.status(201).json({
         message: 'Account created! Please check your @ufl.edu email to verify your account.',
       });
@@ -106,33 +92,32 @@ async function signup(req, res) {
           verificationLink: `${getBackendUrl()}/api/auth/verify-email/${verificationToken}`,
         });
       }
+
       throw mailError;
     }
   } catch (error) {
-    console.error("❌ SIGNUP ERROR AT STEP:", error.message);
-    // Important: Always send a response even on error so frontend doesn't hang
+    console.error('Signup error:', error);
     return res.status(500).json({ error: 'Server error during signup.' });
-  } finally {
-    console.log("--- END SIGNUP PROCESS ---");
   }
 }
 
-/**
- * LOGIN: Checks credentials and issues a JWT token
- */
+// Authenticates a user and returns a JWT on success.
 async function login(req, res) {
   try {
     const email = normalizeEmail(req.body.email);
     const password = (req.body.password || '').toString();
-    console.log("Login attempt for:", email);
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
     const result = await pool.query(
-      `SELECT id, email, password_hash, role, is_verified, status, failed_login_attempts, lockout_expires
-       FROM users WHERE email = $1 LIMIT 1`,
+      `
+      SELECT id, email, password_hash, role, is_verified, status, failed_login_attempts, lockout_expires
+      FROM users
+      WHERE email = $1
+      LIMIT 1
+      `,
       [email],
     );
 
@@ -144,7 +129,11 @@ async function login(req, res) {
     const lockedOut = Boolean(user?.lockout_expires && new Date(user.lockout_expires) > now);
 
     const invalidCredentials = (
-      !user || lockedOut || !passwordMatches || !user.is_verified || user.status !== 'active'
+      !user
+      || lockedOut
+      || !passwordMatches
+      || !user.is_verified
+      || user.status !== 'active'
     );
 
     if (invalidCredentials) {
@@ -153,15 +142,26 @@ async function login(req, res) {
         const lockoutExpires = failedAttempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
 
         await pool.query(
-          `UPDATE users SET failed_login_attempts = $1, lockout_expires = $2 WHERE id = $3`,
+          `
+          UPDATE users
+          SET failed_login_attempts = $1,
+              lockout_expires = $2
+          WHERE id = $3
+          `,
           [failedAttempts, lockoutExpires, user.id],
         );
       }
+
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
     await pool.query(
-      `UPDATE users SET failed_login_attempts = 0, lockout_expires = NULL WHERE id = $1`,
+      `
+      UPDATE users
+      SET failed_login_attempts = 0,
+          lockout_expires = NULL
+      WHERE id = $1
+      `,
       [user.id],
     );
 
@@ -170,7 +170,11 @@ async function login(req, res) {
     return res.json({
       message: 'Login successful',
       token,
-      user: { id: user.id, email: user.email, role: user.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -198,7 +202,12 @@ async function updateCredentials(req, res) {
     }
 
     const userResult = await pool.query(
-      `SELECT id, email, password_hash FROM users WHERE id = $1 LIMIT 1`,
+      `
+      SELECT id, email, password_hash
+      FROM users
+      WHERE id = $1
+      LIMIT 1
+      `,
       [userId],
     );
 
@@ -219,6 +228,7 @@ async function updateCredentials(req, res) {
       if (newPassword.length < MIN_PASSWORD_LENGTH) {
         return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` });
       }
+
       updates.push(`password_hash = $${params.length + 1}`);
       params.push(await bcrypt.hash(newPassword, 10));
     }
@@ -244,9 +254,12 @@ async function updateCredentials(req, res) {
 
         updates.push(`email = $${params.length + 1}`);
         params.push(normalizedNewEmail);
+
         updates.push('is_verified = FALSE');
+
         updates.push(`verification_token = $${params.length + 1}`);
         params.push(verificationToken);
+
         updates.push(`verification_expires = $${params.length + 1}`);
         params.push(verificationExpires);
       }
@@ -285,21 +298,23 @@ async function updateCredentials(req, res) {
   }
 }
 
-/**
- * VERIFY EMAIL: Flips the is_verified switch in the DB
- */
+// Verifies a user's email address using a one-time token.
 async function verifyEmail(req, res) {
   try {
     const { token } = req.params;
-    console.log("Verifying token:", token);
 
     if (!token) {
       return res.status(400).send('<h1>Missing verification token.</h1>');
     }
 
     const result = await pool.query(
-      `SELECT id, is_verified FROM users
-       WHERE verification_token = $1 AND verification_expires > NOW() LIMIT 1`,
+      `
+      SELECT id, is_verified
+      FROM users
+      WHERE verification_token = $1
+        AND verification_expires > NOW()
+      LIMIT 1
+      `,
       [token],
     );
 
@@ -309,16 +324,21 @@ async function verifyEmail(req, res) {
 
     const user = result.rows[0];
     if (user.is_verified) {
-      return res.send('<h1>Email already verified. You can now log in.</h1>');
+      return res.send('<h1>Email already verified.</h1>');
     }
 
     await pool.query(
-      `UPDATE users SET is_verified = TRUE, verification_token = NULL, verification_expires = NULL, updated_at = NOW()
-       WHERE id = $1`,
+      `
+      UPDATE users
+      SET is_verified = TRUE,
+          verification_token = NULL,
+          verification_expires = NULL,
+          updated_at = NOW()
+      WHERE id = $1
+      `,
       [user.id],
     );
 
-    // replace with frontend redirect for full development
     return res.send('<h1>Email verified successfully!</h1><p>You can now return to the app and sign in.</p>');
   } catch (error) {
     console.error('Verification error:', error);
@@ -336,7 +356,12 @@ async function forgotPassword(req, res) {
     }
 
     const result = await pool.query(
-      `SELECT id, email, is_verified FROM users WHERE email = $1 LIMIT 1`,
+      `
+      SELECT id, email, is_verified
+      FROM users
+      WHERE email = $1
+      LIMIT 1
+      `,
       [email],
     );
 
@@ -348,7 +373,13 @@ async function forgotPassword(req, res) {
     const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);
 
     await pool.query(
-      `UPDATE users SET reset_token = $1, reset_token_expires = $2, updated_at = NOW() WHERE id = $3`,
+      `
+      UPDATE users
+      SET reset_token = $1,
+          reset_token_expires = $2,
+          updated_at = NOW()
+      WHERE id = $3
+      `,
       [resetToken, resetTokenExpires, result.rows[0].id],
     );
 
@@ -362,6 +393,7 @@ async function forgotPassword(req, res) {
           resetLink: `${getClientUrl()}/reset-password/${resetToken}`,
         });
       }
+
       throw mailError;
     }
   } catch (error) {
@@ -385,7 +417,13 @@ async function resetPassword(req, res) {
     }
 
     const result = await pool.query(
-      `SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW() LIMIT 1`,
+      `
+      SELECT id
+      FROM users
+      WHERE reset_token = $1
+        AND reset_token_expires > NOW()
+      LIMIT 1
+      `,
       [token],
     );
 
@@ -396,8 +434,14 @@ async function resetPassword(req, res) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     await pool.query(
-      `UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL, updated_at = NOW()
-       WHERE id = $2`,
+      `
+      UPDATE users
+      SET password_hash = $1,
+          reset_token = NULL,
+          reset_token_expires = NULL,
+          updated_at = NOW()
+      WHERE id = $2
+      `,
       [passwordHash, result.rows[0].id],
     );
 
