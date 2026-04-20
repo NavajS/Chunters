@@ -14,14 +14,6 @@ const {
 const { requireAuth } = require('../middleware/authMiddleware');
 
 const router = express.Router();
-const {
-  signup,
-  login,
-  logout,
-  updateCredentials,
-  verifyEmail,
-} = require('../controllers/authController');
-const authenticate = require('../middleware/authMiddleware');
 
 router.post('/signup', signup);
 router.post('/login', login);
