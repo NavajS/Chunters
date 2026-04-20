@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ReportButton from '../components/layout/ReportButton';
 import './ThreadDetailPage.css';
+import AdminDeleteReply from '../components/layout/AdminDeleteReply';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
@@ -101,6 +102,15 @@ function PostNode({ post, depth, threadId, authHeaders, onPostAdded, onPostRemov
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [likedByMe, setLikedByMe] = useState(post.likedByMe);
 
+  const getUserRole = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role;
+    } catch { return null; }
+  };
+  const userRole = getUserRole();
   const indentStyle = { paddingLeft: `${Math.min(depth, 4) * 20}px` };
 
   // Toggles like state for a single reply post.
@@ -169,6 +179,9 @@ function PostNode({ post, depth, threadId, authHeaders, onPostAdded, onPostRemov
             postId={post.id}
             onPostRemoved={() => onPostRemoved(post.id)}
           />
+          {(userRole === 'admin' || userRole === 'moderator') && (
+            <AdminDeleteReply postId={post.id} onDeleted={() => onPostRemoved(post.id)} />
+          )}
         </div>
         {replyOpen && (
           <ReplyComposer
