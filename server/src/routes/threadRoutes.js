@@ -7,6 +7,7 @@ const {
   createThreadPost,
   toggleThreadLike,
   reportThread,
+  reportPost,
 } = require('../controllers/threadController');
 const { requireAuth, maybeAuth } = require('../middleware/authMiddleware');
 
@@ -20,5 +21,6 @@ router.get('/:threadId/posts', listThreadPosts);
 router.post('/:threadId/posts', requireAuth, createThreadPost);
 router.post('/:threadId/like', requireAuth, toggleThreadLike);
 router.post('/:threadId/report', requireAuth, reportThread);
+router.post('/:threadId/posts/:postId/report', requireAuth, reportPost);
 
 module.exports = router;

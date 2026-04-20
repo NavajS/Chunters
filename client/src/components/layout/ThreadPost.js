@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './ThreadPost.css';
+import ReportButton from './ReportButton';
 
 function formatReplyTime(isoDate) {
   const timestamp = new Date(isoDate).getTime();
@@ -21,7 +22,7 @@ function ThreadPost({
   onToggleReplies,
   onReply,
   onToggleLike,
-  onReport,
+  onThreadRemoved,
 }) {
   const [replyDraft, setReplyDraft] = useState('');
 
@@ -51,18 +52,6 @@ function ThreadPost({
     }
   };
 
-  const handleReport = async () => {
-    if (!onReport) return;
-
-    const reason = window.prompt('Why are you reporting this thread?');
-    if (!reason || !reason.trim()) return;
-
-    try {
-      await onReport(id, reason.trim());
-    } catch (error) {
-      console.error('Report failed:', error);
-    }
-  };
 
   return (
     <div className="post">
@@ -100,7 +89,7 @@ function ThreadPost({
           </svg>
           {likes}
         </button>
-        <button className="post-report" onClick={handleReport}>Report</button>
+        <ReportButton threadId={post.id} onPostRemoved={() => onThreadRemoved && onThreadRemoved(post.id)} />
       </div>
 
       {repliesOpen && (

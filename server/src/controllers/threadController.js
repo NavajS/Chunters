@@ -1,3 +1,4 @@
+const { checkPostReportThreshold, checkThreadReportThreshold } = require('../services/moderationService');
 const pool = require('../config/db');
 
 const CATEGORIES = [
@@ -256,7 +257,10 @@ async function listThreadPosts(req, res) {
     if (!thread) {
       return res.status(404).json({ error: 'Thread not found.' });
     }
-
+    // Can't report your own thread
+    if (thread.user_id === userId) {
+      return res.status(400).json({ error: 'You cannot report your own thread.' });
+    }
     const { rows } = await pool.query(
       `
       SELECT p.id, p.thread_id, p.user_id, u.display_name, p.body, p.created_at, p.updated_at
@@ -430,14 +434,95 @@ async function reportThread(req, res) {
       `,
       [userId, threadId, reason],
     );
+    const moderationResult = await checkThreadReportThreshold(threadId);
 
-    return res.status(201).json({ message: 'Report submitted. Thank you for helping keep Chunters safe.' });
+    return res.status(201).json({
+      message: 'Report submitted. Thank you for helping keep Chunters safe.',
+      ...moderationResult,
+    });
   } catch (error) {
     console.error('Report thread error:', error);
     return res.status(500).json({ error: 'Failed to submit report.' });
   }
 }
 
+async function reportPost(req, res) {
+  try {
+    const { threadId, postId } = req.params;
+    const userId = req.user?.userId;
+    const reason = (req.body.reason || '').toString().trim();
+
+    if (!isUuid(threadId)) {
+      return res.status(400).json({ error: 'Invalid thread ID.' });
+    }
+
+    if (!isUuid(postId)) {
+      return res.status(400).json({ error: 'Invalid post ID.' });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    if (reason.length < 5) {
+      return res.status(400).json({ error: 'Report reason must be at least 5 characters.' });
+    }
+
+    if (reason.length > 1000) {
+      return res.status(400).json({ error: 'Report reason must be 1000 characters or less.' });
+    }
+
+    const postResult = await pool.query(
+      `SELECT id, user_id, is_deleted
+       FROM posts
+       WHERE id = $1 AND thread_id = $2 AND is_deleted = FALSE
+       LIMIT 1`,
+      [postId, threadId]
+    );
+
+    if (postResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Post not found.' });
+    }
+
+    const post = postResult.rows[0];
+
+    // Can't report your own post
+    if (post.user_id === userId) {
+      return res.status(400).json({ error: 'You cannot report your own post.' });
+    }
+
+    // Check for existing report from this user
+    const existingReport = await pool.query(
+      `SELECT id FROM reports
+       WHERE reporter_id = $1 AND reported_post_id = $2
+         AND status IN ('pending', 'reviewing')
+       LIMIT 1`,
+      [userId, postId]
+    );
+
+    if (existingReport.rows.length > 0) {
+      return res.status(200).json({ message: 'You already have an active report for this post.' });
+    }
+
+    // Insert the report
+    await pool.query(
+      `INSERT INTO reports (reporter_id, reported_post_id, reason)
+       VALUES ($1, $2, $3)`,
+      [userId, postId, reason]
+    );
+
+    const moderationResult = await checkPostReportThreshold(postId);
+
+    return res.status(201).json({
+      message: 'Report submitted. Thank you for helping keep Chunters safe.',
+      ...moderationResult,
+    });
+
+  } catch (error) {
+    console.error('Report post error:', error);
+    return res.status(500).json({ error: 'Failed to submit report.' });
+  }
+}
 module.exports = {
   listThreads,
   createThread,
@@ -446,4 +531,5 @@ module.exports = {
   createThreadPost,
   toggleThreadLike,
   reportThread,
+  reportPost,
 };
