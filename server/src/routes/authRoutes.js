@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-feature/auth-security
 const {
   signup,
   login,

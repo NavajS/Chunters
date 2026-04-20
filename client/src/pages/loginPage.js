@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BackgroundCards from '../components/layout/BackgroundCards';
 import './loginPage.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function LoginPage() {
   const [email, setEmail] = useState('');

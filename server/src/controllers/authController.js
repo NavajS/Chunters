@@ -131,7 +131,11 @@ async function login(req, res) {
       [user.id]
     );
 
-    const token = generateToken(user);
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
 
     return res.json({
       token,
@@ -291,50 +295,3 @@ async function verifyEmail(req, res) {
 }
 
 module.exports = { signup, login, logout, updateCredentials, verifyEmail };
-/**
- * LOGIN: Checks credentials and issues a JWT token
- */
-async function login(req, res) {
-  try {
-    const { email, password } = req.body;
-    console.log("Login attempt for:", email);
-
-    const result = await pool.query(
-      "SELECT id, email, password_hash, is_verified FROM users WHERE email = $1",
-      [email.trim().toLowerCase()]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: "Invalid email or password." });
-    }
-
-    const user = result.rows[0];
-
-    if (!user.is_verified) {
-      return res.status(403).json({ error: "Please verify your email before logging in." });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Invalid email or password." });
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
-
-    return res.json({
-      message: "Login successful",
-      token,
-      user: { id: user.id, email: user.email }
-    });
-
-  } catch (error) {
-    console.error("Login error:", error);
-    return res.status(500).json({ error: "Server error during login." });
-  }
-}
-
-module.exports = { signup, verifyEmail, login };
