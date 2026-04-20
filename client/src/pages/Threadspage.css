@@ -102,6 +102,31 @@
   color: #a9b8e8;
 }
 
+/* ─── Load more ─── */
+.load-more-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 4px;
+  background: transparent;
+  border: 1px solid #3a3a40;
+  border-radius: 10px;
+  color: #78788a;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.load-more-btn:hover {
+  border-color: #5b5fc7;
+  color: #a0a0f0;
+}
+.load-more-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 720px) {
   .threads-page { flex-direction: column; }

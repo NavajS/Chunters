@@ -5,6 +5,7 @@ import SignUpPage from './pages/SignUpView';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import Threadspage from './pages/Threadspage';
+import ThreadDetailPage from './pages/ThreadDetailPage';
 import AccountPage from './pages/AccountPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
@@ -21,6 +22,14 @@ function App() {
           element={(
             <ProtectedRoute>
               <Threadspage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/threads/:threadId"
+          element={(
+            <ProtectedRoute>
+              <ThreadDetailPage />
             </ProtectedRoute>
           )}
         />

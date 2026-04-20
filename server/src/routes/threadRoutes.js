@@ -1,11 +1,13 @@
 const express = require('express');
 const {
   listThreads,
+  getThread,
   createThread,
   listThreadMeta,
   listThreadPosts,
   createThreadPost,
   toggleThreadLike,
+  togglePostLike,
   reportThread,
   reportPost,
 } = require('../controllers/threadController');
@@ -21,6 +23,7 @@ router.get('/:threadId/posts', listThreadPosts);
 router.post('/:threadId/posts', requireAuth, requireNotBanned, createThreadPost);
 router.post('/:threadId/like', requireAuth, toggleThreadLike);
 router.post('/:threadId/report', requireAuth, reportThread);
+router.post('/:threadId/posts/:postId/like', requireAuth, togglePostLike);
 router.post('/:threadId/posts/:postId/report', requireAuth, reportPost);
 
 module.exports = router;

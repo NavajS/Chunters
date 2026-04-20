@@ -56,6 +56,15 @@
   word-break: break-word;
 }
 
+.post-content--clickable {
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+.post-content--clickable:hover {
+  color: #f0f0f4;
+}
+
 .post-actions {
   display: flex;
   gap: 10px;
