@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import PostComposer from '../components/layout/PostComposer';
 import ThreadPost from '../components/layout/ThreadPost';
 import './Threadspage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
+const PAGE_SIZE = 20;
 
 const categoryInfo = {
   wellness: { label: 'Wellness', color: '#f0a878', description: "Share what's on your mind — stay anonymous" },
@@ -66,19 +67,23 @@ function mapThreadToPost(thread) {
 
 function ThreadsPage() {
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState('wellness');
+  const [searchParams] = useSearchParams();
+
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const cat = searchParams.get('category');
+    return categoryInfo[cat] ? cat : 'wellness';
+  });
   const [sortBy, setSortBy] = useState('newest');
   const [posts, setPosts] = useState([]);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [categoryCounts, setCategoryCounts] = useState(emptyCategoryCounts);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  const [openRepliesThreadId, setOpenRepliesThreadId] = useState(null);
-  const [repliesByThread, setRepliesByThread] = useState({});
-  const [loadingRepliesByThread, setLoadingRepliesByThread] = useState({});
-  const [replyingByThread, setReplyingByThread] = useState({});
 
   const info = useMemo(() => categoryInfo[activeCategory], [activeCategory]);
 
@@ -100,11 +105,7 @@ function ThreadsPage() {
     try {
       const response = await fetch(`${API_URL}/api/threads/meta`);
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load category counts.');
-      }
-
+      if (!response.ok) throw new Error(data.error || 'Failed to load category counts.');
       setCategoryCounts({ ...emptyCategoryCounts, ...(data.categories || {}) });
     } catch (error) {
       console.error('Category count fetch failed:', error);
@@ -115,19 +116,21 @@ function ThreadsPage() {
   const fetchThreads = useCallback(async () => {
     setLoading(true);
     setFetchError('');
-
     try {
-      const params = new URLSearchParams({ category: activeCategory, sort: sortBy });
+      const params = new URLSearchParams({
+        category: activeCategory,
+        sort: sortBy,
+        limit: PAGE_SIZE,
+        offset: 0,
+      });
       const response = await fetch(`${API_URL}/api/threads?${params.toString()}`, {
         headers: getAuthHeaders(),
       });
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load threads.');
-      }
-
+      if (!response.ok) throw new Error(data.error || 'Failed to load threads.');
       setPosts((data.threads || []).map(mapThreadToPost));
+      setOffset(PAGE_SIZE);
+      setHasMore(data.hasMore ?? (data.threads || []).length === PAGE_SIZE);
     } catch (error) {
       setFetchError(error.message || 'Unable to load threads.');
       setPosts([]);
@@ -135,6 +138,32 @@ function ThreadsPage() {
       setLoading(false);
     }
   }, [activeCategory, getAuthHeaders, sortBy]);
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({
+        category: activeCategory,
+        sort: sortBy,
+        limit: PAGE_SIZE,
+        offset,
+      });
+      const response = await fetch(`${API_URL}/api/threads?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to load more threads.');
+      const newPosts = (data.threads || []).map(mapThreadToPost);
+      setPosts((prev) => [...prev, ...newPosts]);
+      setOffset((prev) => prev + PAGE_SIZE);
+      setHasMore(data.hasMore ?? newPosts.length === PAGE_SIZE);
+    } catch (error) {
+      setFetchError(error.message || 'Unable to load more threads.');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     fetchThreads();
@@ -149,28 +178,17 @@ function ThreadsPage() {
     setStatusMessage('');
 
     const token = ensureSignedIn();
-    if (!token) {
-      throw new Error('Missing auth token');
-    }
+    if (!token) throw new Error('Missing auth token');
 
     setIsPosting(true);
-
     try {
       const response = await fetch(`${API_URL}/api/threads`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ content, category: activeCategory }),
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create thread.');
-      }
-
+      if (!response.ok) throw new Error(data.error || 'Failed to create thread.');
       setPosts((prevPosts) => [mapThreadToPost(data.thread), ...prevPosts]);
       setCategoryCounts((prev) => ({
         ...prev,
@@ -185,107 +203,17 @@ function ThreadsPage() {
     }
   };
 
-  const loadReplies = async (threadId) => {
-    setLoadingRepliesByThread((prev) => ({ ...prev, [threadId]: true }));
-    setSubmitError('');
-
-    try {
-      const response = await fetch(`${API_URL}/api/threads/${threadId}/posts`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load replies.');
-      }
-
-      setRepliesByThread((prev) => ({ ...prev, [threadId]: data.posts || [] }));
-    } catch (error) {
-      setSubmitError(error.message || 'Failed to load replies.');
-    } finally {
-      setLoadingRepliesByThread((prev) => ({ ...prev, [threadId]: false }));
-    }
-  };
-
-  const handleToggleReplies = async (threadId) => {
-    if (openRepliesThreadId === threadId) {
-      setOpenRepliesThreadId(null);
-      return;
-    }
-
-    setOpenRepliesThreadId(threadId);
-
-    if (!repliesByThread[threadId]) {
-      await loadReplies(threadId);
-    }
-  };
-
-  const handleReplySubmit = async (threadId, content) => {
-    setSubmitError('');
-    setStatusMessage('');
-
-    const token = ensureSignedIn();
-    if (!token) {
-      throw new Error('Missing auth token');
-    }
-
-    setReplyingByThread((prev) => ({ ...prev, [threadId]: true }));
-
-    try {
-      const response = await fetch(`${API_URL}/api/threads/${threadId}/posts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create reply.');
-      }
-
-      setRepliesByThread((prev) => ({
-        ...prev,
-        [threadId]: [...(prev[threadId] || []), data.post],
-      }));
-
-      setPosts((prev) => prev.map((post) => (
-        post.id === threadId
-          ? { ...post, replies: post.replies + 1 }
-          : post
-      )));
-
-      setStatusMessage('Reply posted.');
-    } catch (error) {
-      setSubmitError(error.message || 'Failed to create reply.');
-      throw error;
-    } finally {
-      setReplyingByThread((prev) => ({ ...prev, [threadId]: false }));
-    }
-  };
-
   const handleToggleLike = async (threadId) => {
     setSubmitError('');
-    setStatusMessage('');
-
     const token = ensureSignedIn();
     if (!token) return;
-
     try {
       const response = await fetch(`${API_URL}/api/threads/${threadId}/like`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update like.');
-      }
-
+      if (!response.ok) throw new Error(data.error || 'Failed to update like.');
       setPosts((prev) => prev.map((post) => (
         post.id === threadId
           ? { ...post, likes: data.likeCount, likedByMe: data.liked }
@@ -296,44 +224,20 @@ function ThreadsPage() {
     }
   };
 
-  const handleReport = async (threadId, reason) => {
-    setSubmitError('');
-    setStatusMessage('');
-
-    const token = ensureSignedIn();
-    if (!token) {
-      throw new Error('Missing auth token');
-    }
-
-    const response = await fetch(`${API_URL}/api/threads/${threadId}/report`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ reason }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      const error = new Error(data.error || 'Failed to submit report.');
-      setSubmitError(error.message);
-      throw error;
-    }
-
-    setStatusMessage(data.message || 'Report submitted.');
-  };
   const handleThreadRemoved = (threadId) => {
     setPosts((prev) => prev.filter((t) => t.id !== threadId));
     setCategoryCounts((prev) => ({
       ...prev,
-     [activeCategory]: Math.max((prev[activeCategory] || 0) - 1, 0),
-   }));
+      [activeCategory]: Math.max((prev[activeCategory] || 0) - 1, 0),
+    }));
   };
+
+  const handleViewThread = (threadId) => {
+    navigate(`/threads/${threadId}`);
+  };
+
   const handleLogout = async () => {
     const token = localStorage.getItem('token');
-
     try {
       if (token) {
         await fetch(`${API_URL}/api/auth/logout`, {
@@ -341,10 +245,7 @@ function ThreadsPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
-    } catch (_error) {
-      // best effort; always clear local token
-    }
-
+    } catch (_) {}
     localStorage.removeItem('token');
     navigate('/');
   };
@@ -397,17 +298,21 @@ function ThreadsPage() {
             <ThreadPost
               key={post.id}
               post={post}
-              repliesOpen={openRepliesThreadId === post.id}
-              replies={repliesByThread[post.id] || []}
-              repliesLoading={Boolean(loadingRepliesByThread[post.id])}
-              replying={Boolean(replyingByThread[post.id])}
-              onToggleReplies={handleToggleReplies}
-              onReply={handleReplySubmit}
               onToggleLike={handleToggleLike}
-              onReport={handleReport}
               onThreadRemoved={handleThreadRemoved}
+              onViewThread={handleViewThread}
             />
           ))}
+
+          {hasMore && !loading && (
+            <button
+              className="load-more-btn"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? 'Loading...' : 'Load more'}
+            </button>
+          )}
         </div>
       </main>
     </div>

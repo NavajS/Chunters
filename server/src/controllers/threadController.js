@@ -84,6 +84,9 @@ function mapPostRow(row) {
     userId: row.user_id,
     displayName: row.display_name || null,
     content: row.body,
+    parentPostId: row.parent_post_id || null,
+    likeCount: Number(row.like_count || 0),
+    likedByMe: Boolean(row.liked_by_me),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -100,6 +103,36 @@ async function getThreadOrNull(threadId) {
   const { rows } = await pool.query(query, [threadId]);
   return rows[0] || null;
 }
+
+const threadDetailQuery = `
+  SELECT
+    t.id,
+    t.user_id,
+    u.display_name,
+    t.title,
+    t.body,
+    t.category,
+    t.created_at,
+    t.updated_at,
+    COALESCE(reply_stats.reply_count, 0) AS reply_count,
+    COALESCE(like_stats.like_count, 0) AS like_count,
+    COALESCE(like_stats.liked_by_me, FALSE) AS liked_by_me
+  FROM threads t
+  LEFT JOIN users u ON u.id = t.user_id
+  LEFT JOIN LATERAL (
+    SELECT COUNT(*)::INTEGER AS reply_count
+    FROM posts p
+    WHERE p.thread_id = t.id AND p.is_deleted = FALSE
+  ) AS reply_stats ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT
+      COUNT(*)::INTEGER AS like_count,
+      COALESCE(BOOL_OR(tl.user_id = $2::UUID), FALSE) AS liked_by_me
+    FROM thread_likes tl
+    WHERE tl.thread_id = t.id
+  ) AS like_stats ON TRUE
+  WHERE t.id = $1 AND t.is_deleted = FALSE
+`;
 
 async function listThreads(req, res) {
   try {
@@ -154,10 +187,33 @@ async function listThreads(req, res) {
     `;
 
     const { rows } = await pool.query(query, [categoryParam, limit, offset, requestingUserId]);
-    return res.json({ threads: rows.map(mapThreadRow) });
+    return res.json({ threads: rows.map(mapThreadRow), hasMore: rows.length === limit });
   } catch (error) {
     console.error('List threads error:', error);
     return res.status(500).json({ error: 'Failed to fetch threads.' });
+  }
+}
+
+async function getThread(req, res) {
+  try {
+    await ensureLikeTable();
+
+    const { threadId } = req.params;
+    if (!isUuid(threadId)) {
+      return res.status(400).json({ error: 'Invalid thread ID.' });
+    }
+
+    const requestingUserId = req.user?.userId || null;
+    const { rows } = await pool.query(threadDetailQuery, [threadId, requestingUserId]);
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Thread not found.' });
+    }
+
+    return res.json({ thread: mapThreadRow(rows[0]) });
+  } catch (error) {
+    console.error('Get thread error:', error);
+    return res.status(500).json({ error: 'Failed to fetch thread.' });
   }
 }
 
@@ -248,6 +304,7 @@ async function listThreadMeta(_req, res) {
 async function listThreadPosts(req, res) {
   try {
     const { threadId } = req.params;
+    const requestingUserId = req.user?.userId || null;
 
     if (!isUuid(threadId)) {
       return res.status(400).json({ error: 'Invalid thread ID.' });
@@ -257,20 +314,28 @@ async function listThreadPosts(req, res) {
     if (!thread) {
       return res.status(404).json({ error: 'Thread not found.' });
     }
-    // Can't report your own thread
-    if (thread.user_id === userId) {
-      return res.status(400).json({ error: 'You cannot report your own thread.' });
-    }
+
     const { rows } = await pool.query(
       `
-      SELECT p.id, p.thread_id, p.user_id, u.display_name, p.body, p.created_at, p.updated_at
+      SELECT
+        p.id, p.thread_id, p.user_id, u.display_name, p.body,
+        p.parent_post_id, p.created_at, p.updated_at,
+        COALESCE(like_stats.like_count, 0) AS like_count,
+        COALESCE(like_stats.liked_by_me, FALSE) AS liked_by_me
       FROM posts p
       LEFT JOIN users u ON u.id = p.user_id
+      LEFT JOIN LATERAL (
+        SELECT
+          COUNT(*)::INTEGER AS like_count,
+          COALESCE(BOOL_OR(pl.user_id = $2::UUID), FALSE) AS liked_by_me
+        FROM post_likes pl
+        WHERE pl.post_id = p.id
+      ) AS like_stats ON TRUE
       WHERE p.thread_id = $1
         AND p.is_deleted = FALSE
       ORDER BY p.created_at ASC
       `,
-      [threadId],
+      [threadId, requestingUserId],
     );
 
     return res.json({ posts: rows.map(mapPostRow) });
@@ -283,7 +348,7 @@ async function listThreadPosts(req, res) {
 async function createThreadPost(req, res) {
   try {
     const { threadId } = req.params;
-    const { content } = req.body;
+    const { content, parentPostId } = req.body;
     const userId = req.user?.userId;
 
     if (!isUuid(threadId)) {
@@ -312,21 +377,42 @@ async function createThreadPost(req, res) {
       return res.status(423).json({ error: 'This thread is locked.' });
     }
 
+    let resolvedParentPostId = null;
+    if (parentPostId) {
+      if (!isUuid(parentPostId)) {
+        return res.status(400).json({ error: 'Invalid parent post ID.' });
+      }
+      const parentResult = await pool.query(
+        'SELECT id FROM posts WHERE id = $1 AND thread_id = $2 AND is_deleted = FALSE LIMIT 1',
+        [parentPostId, threadId],
+      );
+      if (!parentResult.rows.length) {
+        return res.status(404).json({ error: 'Parent post not found.' });
+      }
+      resolvedParentPostId = parentPostId;
+    }
+
     const { rows } = await pool.query(
       `
       WITH inserted AS (
-        INSERT INTO posts (thread_id, user_id, body)
-        VALUES ($1, $2, $3)
-        RETURNING id, thread_id, user_id, body, created_at, updated_at
+        INSERT INTO posts (thread_id, user_id, body, parent_post_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, thread_id, user_id, body, parent_post_id, created_at, updated_at
       )
       SELECT i.*, u.display_name
       FROM inserted i
       LEFT JOIN users u ON u.id = i.user_id
       `,
-      [threadId, userId, normalizedContent],
+      [threadId, userId, normalizedContent, resolvedParentPostId],
     );
 
-    return res.status(201).json({ post: mapPostRow(rows[0]) });
+    return res.status(201).json({
+      post: {
+        ...mapPostRow(rows[0]),
+        likeCount: 0,
+        likedByMe: false,
+      },
+    });
   } catch (error) {
     console.error('Create thread post error:', error);
     return res.status(500).json({ error: 'Failed to create reply.' });
@@ -380,6 +466,57 @@ async function toggleThreadLike(req, res) {
     });
   } catch (error) {
     console.error('Toggle thread like error:', error);
+    return res.status(500).json({ error: 'Failed to update like.' });
+  }
+}
+
+async function togglePostLike(req, res) {
+  try {
+    const { threadId, postId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!isUuid(threadId) || !isUuid(postId)) {
+      return res.status(400).json({ error: 'Invalid thread or post ID.' });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const postResult = await pool.query(
+      'SELECT id FROM posts WHERE id = $1 AND thread_id = $2 AND is_deleted = FALSE LIMIT 1',
+      [postId, threadId],
+    );
+    if (!postResult.rows.length) {
+      return res.status(404).json({ error: 'Post not found.' });
+    }
+
+    const { rows: deletedRows } = await pool.query(
+      'DELETE FROM post_likes WHERE post_id = $1 AND user_id = $2 RETURNING post_id',
+      [postId, userId],
+    );
+
+    let liked = false;
+    if (deletedRows.length === 0) {
+      await pool.query(
+        'INSERT INTO post_likes (post_id, user_id) VALUES ($1, $2)',
+        [postId, userId],
+      );
+      liked = true;
+    }
+
+    const { rows } = await pool.query(
+      'SELECT COUNT(*)::INTEGER AS like_count FROM post_likes WHERE post_id = $1',
+      [postId],
+    );
+
+    return res.json({
+      postId,
+      liked,
+      likeCount: Number(rows[0]?.like_count || 0),
+    });
+  } catch (error) {
+    console.error('Toggle post like error:', error);
     return res.status(500).json({ error: 'Failed to update like.' });
   }
 }
@@ -486,12 +623,10 @@ async function reportPost(req, res) {
 
     const post = postResult.rows[0];
 
-    // Can't report your own post
     if (post.user_id === userId) {
       return res.status(400).json({ error: 'You cannot report your own post.' });
     }
 
-    // Check for existing report from this user
     const existingReport = await pool.query(
       `SELECT id FROM reports
        WHERE reporter_id = $1 AND reported_post_id = $2
@@ -504,7 +639,6 @@ async function reportPost(req, res) {
       return res.status(200).json({ message: 'You already have an active report for this post.' });
     }
 
-    // Insert the report
     await pool.query(
       `INSERT INTO reports (reporter_id, reported_post_id, reason)
        VALUES ($1, $2, $3)`,
@@ -523,13 +657,16 @@ async function reportPost(req, res) {
     return res.status(500).json({ error: 'Failed to submit report.' });
   }
 }
+
 module.exports = {
   listThreads,
+  getThread,
   createThread,
   listThreadMeta,
   listThreadPosts,
   createThreadPost,
   toggleThreadLike,
+  togglePostLike,
   reportThread,
   reportPost,
 };
