@@ -21,6 +21,8 @@ function AccountPage() {
   const [passMessage, setPassMessage] = useState('');
   const [passError, setPassError] = useState('');
 
+  const [modStatus, setModStatus] = useState(null);
+
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -32,11 +34,12 @@ function AccountPage() {
   });
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    const headers = { Authorization: `Bearer ${token}` };
+
     async function fetchAccount() {
       try {
-        const res = await fetch(`${API_URL}/api/auth/account`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
+        const res = await fetch(`${API_URL}/api/auth/account`, { headers });
         if (res.status === 401) { navigate('/'); return; }
         const data = await res.json();
         if (res.ok) {
@@ -45,7 +48,16 @@ function AccountPage() {
         }
       } catch (_) {}
     }
+
+    async function fetchModStatus() {
+      try {
+        const res = await fetch(`${API_URL}/api/moderation/status`, { headers });
+        if (res.ok) setModStatus(await res.json());
+      } catch (_) {}
+    }
+
     fetchAccount();
+    fetchModStatus();
   }, [navigate]);
 
   const handleSaveName = async () => {
@@ -166,6 +178,37 @@ function AccountPage() {
             {passLoading ? 'Updating...' : 'Update password'}
           </button>
         </section>
+
+        {modStatus && (
+          <section className="account-section">
+            <h2>Account standing</h2>
+            <p className="account-hint">Your current moderation status on Chunters.</p>
+            <div className="mod-status-row">
+              <span className="mod-label">Status</span>
+              <span className={`mod-badge mod-badge--${modStatus.status}`}>
+                {modStatus.isBanned ? 'Banned' : 'Active'}
+              </span>
+            </div>
+            <div className="mod-status-row">
+              <span className="mod-label">Strikes</span>
+              <div className="mod-strikes">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className={`mod-strike-dot ${i < modStatus.strikeCount ? (modStatus.isBanned ? 'mod-strike-dot--banned' : 'mod-strike-dot--active') : ''}`}
+                  />
+                ))}
+                <span className="mod-strike-count">{modStatus.strikeCount} of 3</span>
+              </div>
+            </div>
+            {modStatus.isBanned && modStatus.banReason && (
+              <div className="mod-ban-reason">
+                <span className="mod-label">Reason</span>
+                <span>{modStatus.banReason}</span>
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="account-section danger-zone">
           <h2>Account deletion</h2>
