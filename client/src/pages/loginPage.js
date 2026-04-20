@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BackgroundCards from '../components/layout/BackgroundCards';
 import './loginPage.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
 // Renders the sign-in screen for existing users.
 function LoginPage() {
