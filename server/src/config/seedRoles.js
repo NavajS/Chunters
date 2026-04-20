@@ -16,6 +16,12 @@ async function seedRoles() {
   try {
     console.log('Seeding admin and moderator roles...');
 
+    // Reset all elevated roles first so removed users lose access immediately.
+    await pool.query(
+      `UPDATE users SET role = 'student', updated_at = NOW() WHERE role IN ('admin', 'moderator')`
+    );
+    console.log('  Reset all existing admin/moderator roles to student.');
+
     for (const email of ADMIN_EMAILS) {
       const result = await pool.query(
         `UPDATE users SET role = 'admin', updated_at = NOW() WHERE email = $1 RETURNING email, role`,
