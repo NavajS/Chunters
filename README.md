@@ -8,7 +8,7 @@ Chunters is an anonymous thread-based platform that encourages students towards 
 - **Project Owner:** Navaj Sivakumar
 
 ## Tech Stack
-- **PostgreSQL:** Database
+- **Supabase (PostgreSQL):** Hosted database
 - **Express.js:** Backend API
 - **React.js:** Frontend
 - **Node.js:** Runtime Environment
@@ -16,7 +16,7 @@ Chunters is an anonymous thread-based platform that encourages students towards 
 ## Getting Started with Chunters
 
 ### Prerequisites
-- PostgreSQL (v14+)
+- A [Supabase](https://supabase.com) account and project
 - Node.js (v18+)
 - npm
 
@@ -31,11 +31,11 @@ Chunters is an anonymous thread-based platform that encourages students towards 
     `cd client && npm install && cd ..`
 5. Create environment file:
     `cp .env.example .env`
-6. Open `.env` and replace fillers with your own credentials
-7. Create the PostgreSQL database:
-    `createdb chunters_chat`
-8. Initialize database tables:
+6. Open `.env` and set `DATABASE_URL` to your Supabase session pooler connection string
+7. Initialize database tables:
     `npm run db:init`
+8. Seed the database with demo threads:
+    `npm run db:seed`
 9. Run Chunters
     `npm run dev`
 
@@ -44,3 +44,4 @@ Chunters is an anonymous thread-based platform that encourages students towards 
 2. `npm run server`: Runs the back-end
 3. `npm run client`: Runs the front-end
 4. `npm run db:init`: Initalizes database tables
+5. `npm run db:seed`: Seeds the database with demo threads
