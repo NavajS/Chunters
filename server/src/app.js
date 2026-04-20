@@ -19,15 +19,16 @@ app.use(cors({
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10kb' }));
 
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 20,
-    message: { error: 'Too many requests, please try again later.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// Rate limiter — uncomment in production to protect auth endpoints
+// const authLimiter = rateLimit({
+//     windowMs: 15 * 60 * 1000,
+//     max: 20,
+//     message: { error: 'Too many requests, please try again later.' },
+//     standardHeaders: true,
+//     legacyHeaders: false,
+// });
+// app.use('/api/auth', authLimiter);
 
-app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/threads', threadRoutes);
 

@@ -10,7 +10,7 @@ const categories = [
   { key: 'general', label: 'General', color: '#50a878' },
 ];
 
-function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts = {}, onLogout }) {
+function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts = {}, onLogout, onAccount }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -44,15 +44,23 @@ function Sidebar({ activeCategory, onSelectCategory, onNewThread, categoryCounts
         </div>
       </div>
 
-      <button className="sidebar-new-btn" onClick={onNewThread}>
-        + New thread
-      </button>
-
-      {onLogout && (
-        <button className="sidebar-logout-btn" onClick={onLogout}>
-          Log out
+      <div className="sidebar-footer">
+        <button className="sidebar-new-btn" onClick={onNewThread}>
+          + New thread
         </button>
-      )}
+
+        {onAccount && (
+          <button className="sidebar-account-btn" onClick={onAccount}>
+            Account settings
+          </button>
+        )}
+
+        {onLogout && (
+          <button className="sidebar-logout-btn" onClick={onLogout}>
+            Log out
+          </button>
+        )}
+      </div>
     </aside>
   );
 }

@@ -53,6 +53,8 @@
   font-size: 14px;
   line-height: 1.55;
   margin: 0 0 12px;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .post-actions {
@@ -141,6 +143,8 @@
   color: #e0e0e6;
   font-size: 13px;
   line-height: 1.45;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .reply-composer {

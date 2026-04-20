@@ -64,6 +64,7 @@ function mapThreadRow(row) {
   return {
     id: row.id,
     userId: row.user_id,
+    displayName: row.display_name || null,
     title: row.title,
     content: row.body,
     category: row.category,
@@ -80,6 +81,7 @@ function mapPostRow(row) {
     id: row.id,
     threadId: row.thread_id,
     userId: row.user_id,
+    displayName: row.display_name || null,
     content: row.body,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -120,6 +122,7 @@ async function listThreads(req, res) {
       SELECT
         t.id,
         t.user_id,
+        u.display_name,
         t.title,
         t.body,
         t.category,
@@ -129,6 +132,7 @@ async function listThreads(req, res) {
         COALESCE(like_stats.like_count, 0) AS like_count,
         COALESCE(like_stats.liked_by_me, FALSE) AS liked_by_me
       FROM threads t
+      LEFT JOIN users u ON u.id = t.user_id
       LEFT JOIN LATERAL (
         SELECT COUNT(*)::INTEGER AS reply_count
         FROM posts p
@@ -182,9 +186,14 @@ async function createThread(req, res) {
     const safeTitle = buildTitle(title, normalizedContent);
 
     const insertQuery = `
-      INSERT INTO threads (user_id, title, body, category)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, user_id, title, body, category, created_at, updated_at
+      WITH inserted AS (
+        INSERT INTO threads (user_id, title, body, category)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, user_id, title, body, category, created_at, updated_at
+      )
+      SELECT i.*, u.display_name
+      FROM inserted i
+      LEFT JOIN users u ON u.id = i.user_id
     `;
 
     const { rows } = await pool.query(insertQuery, [
@@ -250,11 +259,12 @@ async function listThreadPosts(req, res) {
 
     const { rows } = await pool.query(
       `
-      SELECT id, thread_id, user_id, body, created_at, updated_at
-      FROM posts
-      WHERE thread_id = $1
-        AND is_deleted = FALSE
-      ORDER BY created_at ASC
+      SELECT p.id, p.thread_id, p.user_id, u.display_name, p.body, p.created_at, p.updated_at
+      FROM posts p
+      LEFT JOIN users u ON u.id = p.user_id
+      WHERE p.thread_id = $1
+        AND p.is_deleted = FALSE
+      ORDER BY p.created_at ASC
       `,
       [threadId],
     );
@@ -300,9 +310,14 @@ async function createThreadPost(req, res) {
 
     const { rows } = await pool.query(
       `
-      INSERT INTO posts (thread_id, user_id, body)
-      VALUES ($1, $2, $3)
-      RETURNING id, thread_id, user_id, body, created_at, updated_at
+      WITH inserted AS (
+        INSERT INTO posts (thread_id, user_id, body)
+        VALUES ($1, $2, $3)
+        RETURNING id, thread_id, user_id, body, created_at, updated_at
+      )
+      SELECT i.*, u.display_name
+      FROM inserted i
+      LEFT JOIN users u ON u.id = i.user_id
       `,
       [threadId, userId, normalizedContent],
     );

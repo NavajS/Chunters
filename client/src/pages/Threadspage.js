@@ -37,15 +37,22 @@ function formatTimeAgo(isoDate) {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
+function getInitials(displayName) {
+  if (!displayName) return 'AG';
+  const parts = displayName.trim().split(/\s+/).filter(Boolean);
+  return parts.map((w) => w[0].toUpperCase()).join('').slice(0, 2) || 'AG';
+}
+
 function mapThreadToPost(thread) {
   const categoryKey = categoryInfo[thread.category] ? thread.category : 'general';
   const info = categoryInfo[categoryKey];
 
   return {
     id: thread.id,
+    displayName: thread.displayName || null,
     avatarBg: '#f5e6d0',
     avatarColor: '#b87530',
-    initials: 'AG',
+    initials: getInitials(thread.displayName),
     timeAgo: formatTimeAgo(thread.createdAt),
     category: info.label,
     categoryKey,
@@ -343,6 +350,7 @@ function ThreadsPage() {
         onSelectCategory={setActiveCategory}
         onNewThread={() => document.querySelector('.composer-input')?.focus()}
         categoryCounts={categoryCounts}
+        onAccount={() => navigate('/account')}
         onLogout={handleLogout}
       />
 

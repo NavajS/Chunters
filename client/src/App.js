@@ -5,6 +5,7 @@ import SignUpPage from './pages/SignUpView';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import Threadspage from './pages/Threadspage';
+import AccountPage from './pages/AccountPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -20,6 +21,14 @@ function App() {
           element={(
             <ProtectedRoute>
               <Threadspage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/account"
+          element={(
+            <ProtectedRoute>
+              <AccountPage />
             </ProtectedRoute>
           )}
         />

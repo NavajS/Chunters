@@ -20,12 +20,14 @@ CREATE TABLE IF NOT EXISTS users (
     strike_count INTEGER DEFAULT 0,
     failed_login_attempts INTEGER DEFAULT 0,
     lockout_expires TIMESTAMP,
+    display_name VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS lockout_expires TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(50);
 
 -- Threads: Topics and broader disccussions
 CREATE TABLE IF NOT EXISTS threads (

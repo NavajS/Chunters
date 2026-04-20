@@ -27,6 +27,7 @@ function ThreadPost({
 
   const {
     id,
+    displayName,
     avatarBg,
     avatarColor,
     initials,
@@ -69,7 +70,7 @@ function ThreadPost({
         <div className="post-avatar" style={{ background: avatarBg, color: avatarColor }}>
           {initials}
         </div>
-        <div className="post-author">Anonymous Gator</div>
+        <div className="post-author">{displayName || 'Anonymous Gator'}</div>
         <div className="post-time">· {timeAgo}</div>
         {category && (
           <div
@@ -112,7 +113,7 @@ function ThreadPost({
           {!repliesLoading && replies.map((reply) => (
             <div key={reply.id} className="reply-item">
               <div className="reply-header">
-                <span className="reply-author">Anonymous Gator</span>
+                <span className="reply-author">{reply.displayName || 'Anonymous Gator'}</span>
                 <span className="reply-time">{formatReplyTime(reply.createdAt)}</span>
               </div>
               <p className="reply-content">{reply.content}</p>
