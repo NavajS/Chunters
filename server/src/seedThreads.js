@@ -9,7 +9,7 @@ const bcrypt = require('bcryptjs');
 // Realistic thread topics for a student forum
 const threadTopics = [
   {
-    category: 'Academics',
+    category: 'academics',
     titles: [
       "Help with calculus homework?",
       "Does anyone have notes from yesterday's physics lecture?",
@@ -46,7 +46,7 @@ const threadTopics = [
     ]
   },
   {
-    category: 'Campus Life',
+    category: 'general',
     titles: [
       "Best coffee spots near campus?",
       "Campus events this weekend?",
@@ -83,7 +83,7 @@ const threadTopics = [
     ]
   },
   {
-    category: 'Social',
+    category: 'social',
     titles: [
       "Anyone want to grab lunch?",
       "Looking for roommates?",
@@ -120,7 +120,7 @@ const threadTopics = [
     ]
   },
   {
-    category: 'Advice',
+    category: 'support',
     titles: [
       "Career path advice?",
       "Internship tips?",
@@ -157,7 +157,7 @@ const threadTopics = [
     ]
   },
   {
-    category: 'Questions',
+    category: 'academics',
     titles: [
       "Why is organic chemistry so hard?",
       "How does the grading curve work?",
