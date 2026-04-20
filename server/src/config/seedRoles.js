@@ -7,7 +7,6 @@ require('dotenv').config();
 
 const ADMIN_EMAILS = [
     'jiang.max@ufl.edu',// Max
-    'n.sivakumar@ufl.edu',
 ];
 
 const MODERATOR_EMAILS = [
