@@ -19,8 +19,7 @@ router.get('/meta', listThreadMeta);
 router.get('/', maybeAuth, listThreads);
 router.post('/', requireAuth, requireNotBanned, createThread);
 
-router.get('/:threadId', maybeAuth, getThread);
-router.get('/:threadId/posts', maybeAuth, listThreadPosts);
+router.get('/:threadId/posts', listThreadPosts);
 router.post('/:threadId/posts', requireAuth, requireNotBanned, createThreadPost);
 router.post('/:threadId/like', requireAuth, toggleThreadLike);
 router.post('/:threadId/report', requireAuth, reportThread);
