@@ -65,6 +65,7 @@
 }
 .field input {
   width: 100%;
+  box-sizing: border-box;
   padding: 13px 15px;
   border-radius: 10px;
   border: 1.5px solid #50505a;
