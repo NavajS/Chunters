@@ -9,6 +9,7 @@
     "client": "cd client && npm start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "db:init": "node server/src/config/initDb.js",
+    "db:seed-roles": "node server/src/config/seedRoles.js",
     "server:test": "jest server/tests",
     "client:test": "cd client && npm test"
   },
