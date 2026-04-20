@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BackgroundCards from '../components/layout/BackgroundCards';
 import './SignUpView.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // Renders the account creation screen for first-time users.
 function SignUpPage() {
