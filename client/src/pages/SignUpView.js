@@ -5,6 +5,7 @@ import './SignUpView.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
+// Renders the account creation screen for first-time users.
 function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,6 +16,7 @@ function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Creates a new account and displays verification instructions.
   const handleSignUp = async () => {
     setError('');
     setSuccess('');
@@ -62,8 +64,10 @@ function SignUpPage() {
 
   return (
     <div className="page">
+      {/* Decorative floating cards used as the auth-page background. */}
       <BackgroundCards />
 
+      {/* Main sign-up card with validation feedback and form controls. */}
       <div className="card">
         <div className="avatar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -105,6 +109,7 @@ function SignUpPage() {
         <button className="btn btn-outline" onClick={() => navigate('/')}>Back to Sign in</button>
       </div>
 
+      {/* Footer copy that reinforces anonymity and campus-only access. */}
       <div className="footer">
         Your identity stays completely anonymous.<br />
         Only @ufl.edu emails are accepted.

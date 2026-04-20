@@ -8,14 +8,17 @@ const MIN_PASSWORD_LENGTH = 8;
 const isProduction = process.env.NODE_ENV === 'production';
 const DUMMY_PASSWORD_HASH = '$2b$10$CwTycUXWue0Thq9StjUM0uJ8D5r7n6PfYI8aAizI0s5momkMumZ5e';
 
+// Returns the backend base URL used in generated email links.
 function getBackendUrl() {
   return process.env.BACKEND_URL || 'http://localhost:5050';
 }
 
+// Returns the frontend base URL used in reset-password links.
 function getClientUrl() {
   return process.env.CLIENT_URL || 'http://localhost:3000';
 }
 
+// Validates that an email belongs to one of the allowed domains.
 function isUFLEmail(email) {
   if (typeof email !== 'string') return false;
 
@@ -28,10 +31,12 @@ function isUFLEmail(email) {
   return allowedDomains.includes(emailDomain);
 }
 
+// Normalizes user-provided email input for consistent storage and comparison.
 function normalizeEmail(email) {
   return (email || '').toString().trim().toLowerCase();
 }
 
+// Creates a signed JWT for authenticated API access.
 function buildAuthToken(user) {
   return jwt.sign(
     { userId: user.id, email: user.email, role: user.role },
@@ -40,6 +45,7 @@ function buildAuthToken(user) {
   );
 }
 
+// Registers a new user account and triggers email verification.
 async function signup(req, res) {
   try {
     const email = normalizeEmail(req.body.email);
@@ -95,6 +101,7 @@ async function signup(req, res) {
   }
 }
 
+// Authenticates a user and returns a JWT on success.
 async function login(req, res) {
   try {
     const email = normalizeEmail(req.body.email);
@@ -175,10 +182,12 @@ async function login(req, res) {
   }
 }
 
+// Returns a success response for token-based logout on the client.
 async function logout(_req, res) {
   return res.json({ message: 'Logout successful.' });
 }
 
+// Updates the authenticated user's password and/or email.
 async function updateCredentials(req, res) {
   try {
     const { currentPassword, newPassword, newEmail } = req.body;
@@ -289,6 +298,7 @@ async function updateCredentials(req, res) {
   }
 }
 
+// Verifies a user's email address using a one-time token.
 async function verifyEmail(req, res) {
   try {
     const { token } = req.params;
@@ -336,6 +346,7 @@ async function verifyEmail(req, res) {
   }
 }
 
+// Starts a password reset flow by creating and emailing a reset token.
 async function forgotPassword(req, res) {
   try {
     const email = normalizeEmail(req.body.email);
@@ -391,6 +402,7 @@ async function forgotPassword(req, res) {
   }
 }
 
+// Resets a user's password when given a valid reset token.
 async function resetPassword(req, res) {
   try {
     const { token } = req.params;
@@ -440,6 +452,7 @@ async function resetPassword(req, res) {
   }
 }
 
+// Returns profile details for the currently authenticated user.
 async function getAccount(req, res) {
   try {
     const userId = req.user?.userId;
@@ -472,6 +485,7 @@ async function getAccount(req, res) {
   }
 }
 
+// Updates the authenticated user's public display name.
 async function updateDisplayName(req, res) {
   try {
     const userId = req.user?.userId;
@@ -497,6 +511,7 @@ async function updateDisplayName(req, res) {
   }
 }
 
+// Permanently deletes the authenticated user's account after password confirmation.
 async function deleteAccount(req, res) {
   try {
     const userId = req.user?.userId;

@@ -14,6 +14,7 @@ const categoryInfo = {
   general: { label: 'General', color: '#50a878' },
 };
 
+// Formats an ISO timestamp into compact relative time for thread/reply metadata.
 function formatTimeAgo(isoDate) {
   const timestamp = new Date(isoDate).getTime();
   if (Number.isNaN(timestamp)) return 'just now';
@@ -24,12 +25,14 @@ function formatTimeAgo(isoDate) {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
+// Builds initials for avatar placeholders from a display name.
 function getInitials(displayName) {
   if (!displayName) return 'AG';
   const parts = displayName.trim().split(/\s+/).filter(Boolean);
   return parts.map((w) => w[0].toUpperCase()).join('').slice(0, 2) || 'AG';
 }
 
+// Converts a flat reply list into a parent/child tree for nested rendering.
 function buildPostTree(posts) {
   const byId = {};
   posts.forEach((p) => { byId[p.id] = { ...p, children: [] }; });
@@ -44,6 +47,7 @@ function buildPostTree(posts) {
   return roots;
 }
 
+// Renders a reusable heart icon for like actions.
 function HeartIcon({ filled }) {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -52,15 +56,18 @@ function HeartIcon({ filled }) {
   );
 }
 
+// Renders a reply input box used for top-level and nested replies.
 function ReplyComposer({ onSubmit, submitting, placeholder = 'Write a reply...' }) {
   const [draft, setDraft] = useState('');
 
+  // Submits the current reply draft if valid.
   const handleSubmit = async () => {
     if (!draft.trim() || submitting) return;
     await onSubmit(draft.trim());
     setDraft('');
   };
 
+  // Supports Cmd/Ctrl+Enter keyboard submission.
   const handleKey = (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit();
   };
@@ -87,6 +94,7 @@ function ReplyComposer({ onSubmit, submitting, placeholder = 'Write a reply...' 
   );
 }
 
+// Renders one reply node and recursively renders any child replies.
 function PostNode({ post, depth, threadId, authHeaders, onPostAdded, onPostRemoved }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -95,6 +103,7 @@ function PostNode({ post, depth, threadId, authHeaders, onPostAdded, onPostRemov
 
   const indentStyle = { paddingLeft: `${Math.min(depth, 4) * 20}px` };
 
+  // Toggles like state for a single reply post.
   const handleLike = async () => {
     const headers = authHeaders();
     if (!headers.Authorization) return;
@@ -111,6 +120,7 @@ function PostNode({ post, depth, threadId, authHeaders, onPostAdded, onPostRemov
     } catch (_) {}
   };
 
+  // Creates a nested reply under the current post.
   const handleReply = async (content) => {
     const headers = authHeaders();
     if (!headers.Authorization) return;
@@ -183,6 +193,7 @@ function PostNode({ post, depth, threadId, authHeaders, onPostAdded, onPostRemov
   );
 }
 
+// Renders a single thread view with full reply tree and actions.
 function ThreadDetailPage() {
   const { threadId } = useParams();
   const navigate = useNavigate();
@@ -195,6 +206,7 @@ function ThreadDetailPage() {
   const [threadLikeCount, setThreadLikeCount] = useState(0);
   const [threadLikedByMe, setThreadLikedByMe] = useState(false);
 
+  // Returns auth headers when a session token exists.
   const authHeaders = useCallback(() => {
     const token = localStorage.getItem('token');
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -231,6 +243,7 @@ function ThreadDetailPage() {
 
   const postTree = useMemo(() => buildPostTree(posts), [posts]);
 
+  // Toggles like state for the thread header card.
   const handleLikeThread = async () => {
     const headers = authHeaders();
     if (!headers.Authorization) return;
@@ -247,6 +260,7 @@ function ThreadDetailPage() {
     } catch (_) {}
   };
 
+  // Creates a new top-level reply and updates local reply count.
   const handleTopLevelReply = async (content) => {
     const headers = authHeaders();
     if (!headers.Authorization) return;
@@ -267,11 +281,13 @@ function ThreadDetailPage() {
     }
   };
 
+  // Adds a newly created reply to local state.
   const handlePostAdded = useCallback((post) => {
     setPosts((prev) => [...prev, post]);
     setThread((t) => t ? { ...t, replyCount: t.replyCount + 1 } : t);
   }, []);
 
+  // Removes a moderated/deleted reply from local state.
   const handlePostRemoved = useCallback((postId) => {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
     setThread((t) => t ? { ...t, replyCount: Math.max((t.replyCount || 1) - 1, 0) } : t);
@@ -282,6 +298,7 @@ function ThreadDetailPage() {
 
   const backLabel = catInfo ? `← Back to ${catInfo.label}` : '← Back';
 
+  // Navigates back to the feed, preserving the thread category when possible.
   const handleBack = () => {
     if (categoryKey) {
       navigate(`/threads?category=${categoryKey}`);
@@ -292,6 +309,7 @@ function ThreadDetailPage() {
 
   return (
     <div className="td-page">
+      {/* Top navigation for returning to the feed and showing thread category. */}
       <div className="td-topbar">
         <button className="td-back-btn" onClick={handleBack}>{backLabel}</button>
         {thread && (
@@ -304,12 +322,14 @@ function ThreadDetailPage() {
         )}
       </div>
 
+      {/* Main content area for loading states, thread card, composer, and replies. */}
       <div className="td-content">
         {loading && <div className="td-status muted">Loading discussion...</div>}
         {error && <div className="td-status error">{error}</div>}
 
         {!loading && thread && (
           <>
+            {/* Primary thread card with author info, content, and thread actions. */}
             <div className="td-thread-card">
               <div className="td-thread-header">
                 <div
@@ -342,6 +362,7 @@ function ThreadDetailPage() {
               </div>
             </div>
 
+            {/* Composer for new top-level replies in this discussion. */}
             <div className="td-reply-section">
               <h3 className="td-reply-heading">Join the discussion</h3>
               <ReplyComposer
@@ -351,6 +372,7 @@ function ThreadDetailPage() {
               />
             </div>
 
+            {/* Nested reply tree rendered from parent/child post relationships. */}
             {postTree.length > 0 && (
               <div className="td-posts">
                 {postTree.map((post) => (

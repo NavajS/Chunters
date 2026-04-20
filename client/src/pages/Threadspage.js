@@ -26,6 +26,7 @@ const emptyCategoryCounts = {
   general: 0,
 };
 
+// Formats an ISO timestamp into a short relative label for feed cards.
 function formatTimeAgo(isoDate) {
   const timestamp = new Date(isoDate).getTime();
   if (Number.isNaN(timestamp)) return 'just now';
@@ -38,12 +39,14 @@ function formatTimeAgo(isoDate) {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
+// Builds initials for avatar placeholders from a display name.
 function getInitials(displayName) {
   if (!displayName) return 'AG';
   const parts = displayName.trim().split(/\s+/).filter(Boolean);
   return parts.map((w) => w[0].toUpperCase()).join('').slice(0, 2) || 'AG';
 }
 
+// Maps API thread records into the presentation model used by feed cards.
 function mapThreadToPost(thread) {
   const categoryKey = categoryInfo[thread.category] ? thread.category : 'general';
   const info = categoryInfo[categoryKey];
@@ -65,6 +68,7 @@ function mapThreadToPost(thread) {
   };
 }
 
+// Renders the main thread feed with category navigation and post creation.
 function ThreadsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -87,11 +91,13 @@ function ThreadsPage() {
 
   const info = useMemo(() => categoryInfo[activeCategory], [activeCategory]);
 
+  // Returns auth headers when a session token exists.
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('token');
     return token ? { Authorization: `Bearer ${token}` } : {};
   }, []);
 
+  // Guards actions that require authentication and reports missing sessions.
   const ensureSignedIn = useCallback(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -101,6 +107,7 @@ function ThreadsPage() {
     return token;
   }, []);
 
+  // Loads per-category thread totals shown in the sidebar.
   const fetchCategoryCounts = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/threads/meta`);
@@ -113,6 +120,7 @@ function ThreadsPage() {
     }
   }, []);
 
+  // Loads the first page of threads for the current category and sort mode.
   const fetchThreads = useCallback(async () => {
     setLoading(true);
     setFetchError('');
@@ -139,6 +147,7 @@ function ThreadsPage() {
     }
   }, [activeCategory, getAuthHeaders, sortBy]);
 
+  // Loads the next page of threads for infinite-style feed pagination.
   const handleLoadMore = async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
@@ -173,6 +182,7 @@ function ThreadsPage() {
     fetchCategoryCounts();
   }, [fetchCategoryCounts]);
 
+  // Creates a new thread in the active category and prepends it to the feed.
   const handleNewPost = async (content) => {
     setSubmitError('');
     setStatusMessage('');
@@ -203,6 +213,7 @@ function ThreadsPage() {
     }
   };
 
+  // Toggles like state for a thread card in the feed.
   const handleToggleLike = async (threadId) => {
     setSubmitError('');
     const token = ensureSignedIn();
@@ -224,6 +235,7 @@ function ThreadsPage() {
     }
   };
 
+  // Removes a thread card locally after moderation takedown.
   const handleThreadRemoved = (threadId) => {
     setPosts((prev) => prev.filter((t) => t.id !== threadId));
     setCategoryCounts((prev) => ({
@@ -232,10 +244,12 @@ function ThreadsPage() {
     }));
   };
 
+  // Navigates from feed cards to the full thread discussion view.
   const handleViewThread = (threadId) => {
     navigate(`/threads/${threadId}`);
   };
 
+  // Calls logout endpoint, clears token, and redirects to sign-in.
   const handleLogout = async () => {
     const token = localStorage.getItem('token');
     try {
@@ -252,6 +266,7 @@ function ThreadsPage() {
 
   return (
     <div className="threads-page">
+      {/* Left rail for category navigation and account/session actions. */}
       <Sidebar
         activeCategory={activeCategory}
         onSelectCategory={setActiveCategory}
@@ -261,7 +276,9 @@ function ThreadsPage() {
         onLogout={handleLogout}
       />
 
+      {/* Main feed column for category context, composer, and thread list. */}
       <main className="threads-main">
+        {/* Feed header mirrors the selected category and sort controls. */}
         <div className="threads-topbar">
           <div>
             <h1 className="threads-title">{info.label}</h1>
@@ -283,6 +300,7 @@ function ThreadsPage() {
           </div>
         </div>
 
+        {/* Feed content area containing composer, messages, and thread cards. */}
         <div className="threads-content">
           <PostComposer onPost={handleNewPost} disabled={isPosting} />
 

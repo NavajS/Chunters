@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 
+// Guards routes by redirecting unauthenticated users back to sign-in.
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
 

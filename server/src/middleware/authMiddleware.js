@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { isUserBanned } = require('../services/moderationService');
 
+// Extracts a bearer token from the Authorization header value.
 function extractToken(authorizationHeader = '') {
   const header = authorizationHeader.toString().trim();
   if (!header) return null;
@@ -12,6 +13,7 @@ function extractToken(authorizationHeader = '') {
   return header;
 }
 
+// Parses auth headers and returns both the raw token and decoded user payload.
 function parseAuthHeader(authorizationHeader) {
   const token = extractToken(authorizationHeader);
   if (!token) {
@@ -26,6 +28,7 @@ function parseAuthHeader(authorizationHeader) {
   }
 }
 
+// Blocks requests that do not include a valid authenticated user token.
 function requireAuth(req, res, next) {
   const { token, user } = parseAuthHeader(req.headers.authorization);
 
@@ -37,12 +40,14 @@ function requireAuth(req, res, next) {
   return next();
 }
 
+// Optionally attaches authenticated user context when a valid token is present.
 function maybeAuth(req, _res, next) {
   const { user } = parseAuthHeader(req.headers.authorization);
   req.user = user || null;
   return next();
 }
 
+// Blocks authenticated users whose moderation status is currently banned.
 async function requireNotBanned(req, res, next) {
   try {
     const banned = await isUserBanned(req.user.userId);
