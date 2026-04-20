@@ -191,19 +191,3 @@
   background: rgba(224, 112, 144, 0.12);
   transform: scale(1.02);
 }
-
-.sidebar-admin-btn {
-  background: transparent;
-  border: 1px solid #e06060;
-  color: #e06060;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.2s;
-}
-.sidebar-admin-btn:hover {
-  background: rgba(224, 96, 96, 0.1);
-}
