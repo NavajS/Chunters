@@ -440,6 +440,99 @@ async function resetPassword(req, res) {
   }
 }
 
+async function getAccount(req, res) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const result = await pool.query(
+      'SELECT id, email, display_name, role, created_at FROM users WHERE id = $1 LIMIT 1',
+      [userId],
+    );
+
+    const user = result.rows[0];
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    return res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.display_name || '',
+        role: user.role,
+        createdAt: user.created_at,
+      },
+    });
+  } catch (error) {
+    console.error('Get account error:', error);
+    return res.status(500).json({ error: 'Server error while fetching account.' });
+  }
+}
+
+async function updateDisplayName(req, res) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const displayName = ((req.body.displayName || '')).toString().trim();
+
+    if (displayName.length > 50) {
+      return res.status(400).json({ error: 'Display name must be 50 characters or less.' });
+    }
+
+    await pool.query(
+      'UPDATE users SET display_name = $1, updated_at = NOW() WHERE id = $2',
+      [displayName || null, userId],
+    );
+
+    return res.json({ message: 'Display name updated.', displayName });
+  } catch (error) {
+    console.error('Update display name error:', error);
+    return res.status(500).json({ error: 'Server error while updating display name.' });
+  }
+}
+
+async function deleteAccount(req, res) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const password = (req.body.password || '').toString();
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required to delete your account.' });
+    }
+
+    const result = await pool.query(
+      'SELECT id, password_hash FROM users WHERE id = $1 LIMIT 1',
+      [userId],
+    );
+
+    const user = result.rows[0];
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatches) {
+      return res.status(401).json({ error: 'Invalid password.' });
+    }
+
+    await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    return res.json({ message: 'Account deleted successfully.' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return res.status(500).json({ error: 'Server error while deleting account.' });
+  }
+}
+
 module.exports = {
   signup,
   login,
@@ -448,4 +541,7 @@ module.exports = {
   verifyEmail,
   forgotPassword,
   resetPassword,
+  getAccount,
+  updateDisplayName,
+  deleteAccount,
 };
