@@ -1,12 +1,14 @@
 .sidebar {
   width: 240px;
+  height: 100vh;
   background: #232327;
   border-right: 1px solid #3a3a40;
   padding: 20px 14px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   flex-shrink: 0;
+  overflow-y: auto;
 }
 
 /* ─── Header ─── */
@@ -45,6 +47,15 @@
 }
 
 /* ─── Section ─── */
+.sidebar-section {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 45vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
 .sidebar-section-title {
   color: #78788a;
   font-size: 11px;
@@ -109,9 +120,19 @@
   font-size: 11px;
 }
 
+/* ─── Footer button group ─── */
+.sidebar-footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  padding-bottom: 35px;
+}
+
 /* ─── New Thread Button ─── */
 .sidebar-new-btn {
-  margin-top: auto;
+  margin-top: 0;
   background: #5b5fc7;
   color: #fff;
   border: none;
@@ -131,4 +152,42 @@
 }
 .sidebar-new-btn:active {
   transform: scale(0.97);
+}
+
+.sidebar-account-btn {
+  background: transparent;
+  color: #a0a0b8;
+  border: 1px solid #48484f;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+
+.sidebar-account-btn:hover {
+  background: rgba(91, 95, 199, 0.1);
+  color: #c0c0e8;
+  border-color: #5b5fc7;
+  transform: scale(1.02);
+}
+
+.sidebar-logout-btn {
+  background: transparent;
+  color: #f2a3b8;
+  border: 1px solid rgba(224, 112, 144, 0.5);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(224, 112, 144, 0.12);
+  transform: scale(1.02);
 }

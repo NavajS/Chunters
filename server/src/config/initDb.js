@@ -20,12 +20,14 @@ CREATE TABLE IF NOT EXISTS users (
     strike_count INTEGER DEFAULT 0,
     failed_login_attempts INTEGER DEFAULT 0,
     lockout_expires TIMESTAMP,
+    display_name VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS lockout_expires TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(50);
 
 -- Threads: Topics and broader disccussions
 CREATE TABLE IF NOT EXISTS threads (
@@ -46,10 +48,27 @@ CREATE TABLE IF NOT EXISTS posts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     thread_id UUID NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    parent_post_id UUID REFERENCES posts(id) ON DELETE SET NULL,
     body TEXT NOT NULL,
     is_deleted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS parent_post_id UUID REFERENCES posts(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS thread_likes (
+    thread_id UUID NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (thread_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS post_likes (
+    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (post_id, user_id)
 );
 
 -- Reports: Users submit a report on content they believe violate TOS
@@ -115,10 +134,36 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Trigger function to auto-update updated_at on row modification
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER update_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE OR REPLACE TRIGGER update_threads_updated_at
+    BEFORE UPDATE ON threads
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE OR REPLACE TRIGGER update_posts_updated_at
+    BEFORE UPDATE ON posts
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_threads_created_at ON threads(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_threads_category ON threads(category);
 CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON posts(thread_id);
+CREATE INDEX IF NOT EXISTS idx_posts_parent_post_id ON posts(parent_post_id);
+CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON post_likes(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_likes_user_id ON post_likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_thread_likes_thread_id ON thread_likes(thread_id);
+CREATE INDEX IF NOT EXISTS idx_thread_likes_user_id ON thread_likes(user_id);
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 CREATE INDEX IF NOT EXISTS idx_bans_user_id ON bans(user_id);
 CREATE INDEX IF NOT EXISTS idx_bans_active ON bans(is_active);
@@ -126,6 +171,7 @@ CREATE INDEX IF NOT EXISTS idx_appeals_status ON appeals(status);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 `;
 
+// Applies the schema bootstrap SQL so required tables, triggers, and indexes exist.
 async function initializeDatabase() {
     try {
         console.log('🚀 Initializing the database...');

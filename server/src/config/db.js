@@ -5,16 +5,20 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase')
+    ? { rejectUnauthorized: false }
+    : false,
 });
 
-// We only log the connection, we NEVER call process.exit here
 pool.on('connect', () => {
-  console.log('🐘 PostgreSQL connected successfully');
+  console.log('PostgreSQL connected successfully');
+});
+
+// Without this handler an idle-client error from pg becomes an unhandled
+// exception that can crash the process when the DB drops mid-run.
+pool.on('error', (err) => {
+  console.error('Unexpected database pool error:', err.message);
 });
 
 module.exports = pool;

@@ -149,6 +149,7 @@ const cards = [
   },
 ];
 
+// Renders decorative category-themed cards used behind auth and account pages.
 function BackgroundCards() {
   return (
     <div className="bg-cards">
