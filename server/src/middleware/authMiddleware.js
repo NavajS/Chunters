@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { isUserBanned } = require('../services/moderationService');
 
 function extractToken(authorizationHeader = '') {
   const header = authorizationHeader.toString().trim();
@@ -42,8 +43,21 @@ function maybeAuth(req, _res, next) {
   return next();
 }
 
+async function requireNotBanned(req, res, next) {
+  try {
+    const banned = await isUserBanned(req.user.userId);
+    if (banned) {
+      return res.status(403).json({ error: 'Your account has been banned and cannot perform this action.' });
+    }
+    return next();
+  } catch (_) {
+    return next();
+  }
+}
+
 module.exports = {
   requireAuth,
   maybeAuth,
+  requireNotBanned,
   authenticate: requireAuth,
 };
