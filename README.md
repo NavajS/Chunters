@@ -36,7 +36,9 @@ Chunters is an anonymous thread-based platform that encourages students towards 
     `npm run db:init`
 8. Seed the database with demo threads:
     `npm run db:seed`
-9. Run Chunters
+9. Seed admin and moderator roles:
+    `npm run db:seed-roles`
+10. Run Chunters
     `npm run dev`
 
 ## Scripts
@@ -45,3 +47,4 @@ Chunters is an anonymous thread-based platform that encourages students towards 
 3. `npm run client`: Runs the front-end
 4. `npm run db:init`: Initalizes database tables
 5. `npm run db:seed`: Seeds the database with demo threads
+6. `npm run db:seed-roles`: Seeds admin and moderator roles
